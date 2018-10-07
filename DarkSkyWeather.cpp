@@ -25,7 +25,10 @@ void DSWrequest::parseRequest(String url) {
   // SHA1 certificate fingerprint
   const char* fingerprint = "EB:C2:67:D1:B1:C6:77:90:51:C1:4A:0A:BA:83:E1:F0:6D:73:DD:B8";
 
+  // Only tested with axTLS but BearSSL should work
   WiFiClientSecure client;
+  //BearSSL::WiFiClientSecure client;
+  
   JsonStreamingParser parser;
   parser.setListener(this);
 
