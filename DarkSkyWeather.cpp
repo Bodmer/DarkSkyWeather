@@ -143,7 +143,7 @@ void DSWforecast::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_dail
   // Exclude some info to shorten JSON message
   String exclude = "";
   //exclude += "hourly,";   // summary, then weather every hour for 48 hours
-  //exclude += "minutely,"; // summary, then rain predictions every minute for next hour, gives huge message response!
+  exclude += "minutely,"; // summary, then rain predictions every minute for next hour, gives huge message response!
   //exclude += "daily,";    // summary, then daily detailed weather for one week (7 days)
   exclude += "alerts,";   // special warnings, typically none
   exclude += "flags";     // misc info
