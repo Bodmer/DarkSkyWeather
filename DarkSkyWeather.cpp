@@ -22,29 +22,17 @@ void DSWrequest::parseRequest(String url) {
 
   uint32_t dt = millis();
 
-  // SHA1 certificate fingerprint
-  const char* fingerprint = "EB:C2:67:D1:B1:C6:77:90:51:C1:4A:0A:BA:83:E1:F0:6D:73:DD:B8";
+  BearSSL::WiFiClientSecure client;
+  client.setInsecure();
 
-  // Only tested with axTLS but BearSSL should work
-  WiFiClientSecure client;
-  //BearSSL::WiFiClientSecure client;
-  
   JsonStreamingParser parser;
   parser.setListener(this);
 
   const char*  host = "api.darksky.net";
 
   if (!client.connect(host, 443)) {
-      Serial.println("Connection failed.");
-      return;
-  }
-
-  if (client.verify(fingerprint, host)) {
-      Serial.println("Certificate OK");
-  } else {
-      Serial.println("Bad certificate");
-      client.stop();
-      return;
+    Serial.println("Connection failed.");
+    return;
   }
 
   bool isBody = false;
@@ -64,8 +52,8 @@ void DSWrequest::parseRequest(String url) {
   }
 
   // Parse the JSON data
-  while(client.connected()) {
-    while(client.available() > 0) {
+  while (client.connected()) {
+    while (client.available() > 0) {
       c = client.read();
       if (c == '{' || c == '[') {
         ccount = 0;
@@ -76,12 +64,15 @@ void DSWrequest::parseRequest(String url) {
       }
 #ifdef SHOW_JSON
       if (c == '{' || c == '[' || c == '}' || c == ']') Serial.println();
-      Serial.print(c); if (ccount++ > 100 && c == ',') {ccount = 0; Serial.println();}
+      Serial.print(c); if (ccount++ > 100 && c == ',') {
+        ccount = 0;
+        Serial.println();
+      }
 #endif
     }
   }
   Serial.println("");
-  Serial.print("Done in "); Serial.print(millis()-dt); Serial.println(" ms\n");
+  Serial.print("Done in "); Serial.print(millis() - dt); Serial.println(" ms\n");
 
   parser.reset();
 
@@ -177,26 +168,16 @@ void DSWforecast::value(String value) {
   if (currentParent == "currently") {
     data_set = "currently";
     if (currentKey == "time") current->time = value.toInt();
-    else
-    if (currentKey == "summary") current->summary = value;
-    else
-    if (currentKey == "icon") current->icon = value;
-    else
-    if (currentKey == "precipIntensity") current->precipIntensity = value.toFloat();
-    else
-    if (currentKey == "precipType") current->precipType = value;
-    else
-    if (currentKey == "temperature") current->temperature = value.toFloat();
-    else
-    if (currentKey == "humidity") current->humidity = value.toFloat();
-    else
-    if (currentKey == "pressure") current->pressure = value.toFloat();
-    else
-    if (currentKey == "windSpeed") current->windSpeed = value.toFloat();
-    else
-    if (currentKey == "windGust") current->windGust = value.toFloat();
-    else
-    if (currentKey == "windBearing") current->windBearing = value.toInt();
+    else if (currentKey == "summary") current->summary = value;
+    else if (currentKey == "icon") current->icon = value;
+    else if (currentKey == "precipIntensity") current->precipIntensity = value.toFloat();
+    else if (currentKey == "precipType") current->precipType = value;
+    else if (currentKey == "temperature") current->temperature = value.toFloat();
+    else if (currentKey == "humidity") current->humidity = value.toFloat();
+    else if (currentKey == "pressure") current->pressure = value.toFloat();
+    else if (currentKey == "windSpeed") current->windSpeed = value.toFloat();
+    else if (currentKey == "windGust") current->windGust = value.toFloat();
+    else if (currentKey == "windBearing") current->windBearing = value.toInt();
     //else
     //if (currentKey == "x") current->x = value;
   }
@@ -229,14 +210,10 @@ void DSWforecast::value(String value) {
       hourly->time[hourly_index] = value.toInt();
     }
     if (currentKey == "summary") hourly->summary[hourly_index] = value;
-    else
-    if (currentKey == "precipIntensity") hourly->precipIntensity[hourly_index] = value.toFloat();
-    else
-    if (currentKey == "precipType") hourly->precipType[hourly_index] = value;
-    else
-    if (currentKey == "temperature") hourly->temperature[hourly_index] = value.toFloat();
-    else
-    if (currentKey == "pressure") hourly->pressure[hourly_index] = value.toFloat();
+    else if (currentKey == "precipIntensity") hourly->precipIntensity[hourly_index] = value.toFloat();
+    else if (currentKey == "precipType") hourly->precipType[hourly_index] = value;
+    else if (currentKey == "temperature") hourly->temperature[hourly_index] = value.toFloat();
+    else if (currentKey == "pressure") hourly->pressure[hourly_index] = value.toFloat();
     //else
     //if (currentKey == "x") hourly->x[hourly_index] = value;
   }
@@ -250,38 +227,22 @@ void DSWforecast::value(String value) {
       daily->time[daily_index] = value.toInt();
     }
     if (currentKey == "summary") daily->summary[daily_index] = value;
-    else
-    if (currentKey == "time") daily->time[daily_index] = value.toInt();
-    else
-    if (currentKey == "icon") daily->icon[daily_index] = value;
-    else
-    if (currentKey == "sunriseTime") daily->sunriseTime[daily_index] = value.toInt();
-    else
-    if (currentKey == "sunsetTime") daily->sunsetTime[daily_index] = value.toInt();
-    else
-    if (currentKey == "moonPhase") daily->moonPhase[daily_index] = 100 * (value.toFloat());
-    else
-    if (currentKey == "precipIntensity") daily->precipIntensity[daily_index] = value.toFloat();
-    else
-    if (currentKey == "precipProbability") daily->precipProbability[daily_index] = value.toFloat();
-    else
-    if (currentKey == "precipType") daily->precipType[daily_index] = value;
-    else
-    if (currentKey == "temperatureHigh") daily->temperatureHigh[daily_index] = value.toFloat();
-    else
-    if (currentKey == "temperatureLow") daily->temperatureLow[daily_index] = value.toFloat();
-    else
-    if (currentKey == "humidity") daily->humidity[daily_index] = value.toFloat();
-    else
-    if (currentKey == "pressure") daily->pressure[daily_index] = value.toFloat();
-    else
-    if (currentKey == "windSpeed") daily->windSpeed[daily_index] = value.toFloat();
-    else
-    if (currentKey == "windGust") daily->windGust[daily_index] = value.toFloat();
-    else
-    if (currentKey == "windBearing") daily->windBearing[daily_index] = value.toInt();
-    else
-    if (currentKey == "cloudCover") daily->cloudCover[daily_index] = value.toFloat();
+    else if (currentKey == "time") daily->time[daily_index] = value.toInt();
+    else if (currentKey == "icon") daily->icon[daily_index] = value;
+    else if (currentKey == "sunriseTime") daily->sunriseTime[daily_index] = value.toInt();
+    else if (currentKey == "sunsetTime") daily->sunsetTime[daily_index] = value.toInt();
+    else if (currentKey == "moonPhase") daily->moonPhase[daily_index] = 100 * (value.toFloat());
+    else if (currentKey == "precipIntensity") daily->precipIntensity[daily_index] = value.toFloat();
+    else if (currentKey == "precipProbability") daily->precipProbability[daily_index] = value.toFloat();
+    else if (currentKey == "precipType") daily->precipType[daily_index] = value;
+    else if (currentKey == "temperatureHigh") daily->temperatureHigh[daily_index] = value.toFloat();
+    else if (currentKey == "temperatureLow") daily->temperatureLow[daily_index] = value.toFloat();
+    else if (currentKey == "humidity") daily->humidity[daily_index] = value.toFloat();
+    else if (currentKey == "pressure") daily->pressure[daily_index] = value.toFloat();
+    else if (currentKey == "windSpeed") daily->windSpeed[daily_index] = value.toFloat();
+    else if (currentKey == "windGust") daily->windGust[daily_index] = value.toFloat();
+    else if (currentKey == "windBearing") daily->windBearing[daily_index] = value.toInt();
+    else if (currentKey == "cloudCover") daily->cloudCover[daily_index] = value.toFloat();
     //else
     //if (currentKey == "x") daily->x[daily_index] = value;
   }
