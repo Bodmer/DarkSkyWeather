@@ -27,7 +27,7 @@
 #define SSID "SSID"
 #define SSID_PASSWORD "password"
 
-// Dark Sky API Details, replace x's with y0ur API key
+// Dark Sky API Details, replace x's with your API key
 String api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // Obtain this from your Dark Sky account
 
 // Set both longitude and latitude to at least 4 decimal places
@@ -40,7 +40,7 @@ String language = ""; // See notes tab
 // =========  User configured stuff ends here  =========
 // =====================================================
 
-DSWforecast dsw; // Weather forcast library instance
+DSWforecast dsw; // Weather forecast library instance
 
 void setup() { 
   Serial.begin(250000); // Fast to stop it holding up the stream
@@ -88,15 +88,18 @@ void displayCurrentWeather()
   // Serial.print("Timezone            : "); Serial.println(current->timezone);
   
   Serial.println("############### Current weather ###############\n");
-  Serial.print("Current summary     : "); Serial.println(current->summary);
-  Serial.print("Current precipInten : "); Serial.println(current->precipIntensity);
-  Serial.print("Current precipType  : "); Serial.println(current->precipType);
-  Serial.print("Current temperature : "); Serial.println(current->temperature);
-  Serial.print("Current humidity    : "); Serial.println(current->humidity);
-  Serial.print("Current pressure    : "); Serial.println(current->pressure);
-  Serial.print("Current wind speed  : "); Serial.println(current->windSpeed);
-  Serial.print("Current wind gust   : "); Serial.println(current->windGust);
-  Serial.print("Current wind dirn   : "); Serial.println(current->windBearing);
+  Serial.print("Current time             : "); Serial.print(strTime(current->time));
+  Serial.print("Current summary          : "); Serial.println(current->summary);
+  Serial.print("Current icon             : "); Serial.println(current->icon);
+  Serial.print("Current precipInten      : "); Serial.println(current->precipIntensity);
+  Serial.print("Current precipType       : "); Serial.println(current->precipType);
+  Serial.print("Current precipProbability: "); Serial.println(current->precipProbability);
+  Serial.print("Current temperature      : "); Serial.println(current->temperature);
+  Serial.print("Current humidity         : "); Serial.println(current->humidity);
+  Serial.print("Current pressure         : "); Serial.println(current->pressure);
+  Serial.print("Current wind speed       : "); Serial.println(current->windSpeed);
+  Serial.print("Current wind gust        : "); Serial.println(current->windGust);
+  Serial.print("Current wind dirn        : "); Serial.println(current->windBearing);
 
   Serial.println();
 
@@ -104,12 +107,15 @@ void displayCurrentWeather()
   Serial.print("Overall hourly summary : "); Serial.println(hourly->overallSummary);
   for (int i = 0; i<MAX_HOURS; i++)
   {
-    Serial.print("Hourly summary ");Serial.print(i);Serial.print(" : "); Serial.println(hourly->summary[i]);
-    Serial.print("Time              : "); Serial.print(strTime(hourly->time[i]));
-    Serial.print("precipIntensity   : "); Serial.println(hourly->precipIntensity[i]);
-    Serial.print("precipType        : "); Serial.println(hourly->precipType[i]);
-    Serial.print("temperature       : "); Serial.println(hourly->temperature[i]);
-    Serial.print("pressure          : "); Serial.println(hourly->pressure[i]);
+    Serial.print("Hourly summary ");Serial.print(i);Serial.print("  : "); Serial.println(hourly->summary[i]);
+    Serial.print("Time               : "); Serial.print(strTime(hourly->time[i]));
+    Serial.print("precipIntensity    : "); Serial.println(hourly->precipIntensity[i]);
+    Serial.print("precipProbability  : "); Serial.println(hourly->precipProbability[i]);
+    Serial.print("precipType         : "); Serial.println(hourly->precipType[i]);
+    Serial.print("precipAccumulation : "); Serial.println(hourly->precipAccumulation[i]);
+    Serial.print("temperature        : "); Serial.println(hourly->temperature[i]);
+    Serial.print("pressure           : "); Serial.println(hourly->pressure[i]);
+    Serial.print("cloudCover         : "); Serial.println(hourly->cloudCover[i]);
     Serial.println();
   }
 
@@ -117,7 +123,7 @@ void displayCurrentWeather()
   Serial.print("Daily summary     : "); Serial.println(daily->overallSummary);
   Serial.println();
 
-  for (int i = 0; i<8; i++)
+  for (int i = 0; i<MAX_DAYS; i++)
   {
     Serial.print("Daily summary ");Serial.print(i);Serial.print("   : "); Serial.println(daily->summary[i]);
     Serial.print("time              : "); Serial.print(strTime(daily->time[i]));
@@ -128,6 +134,7 @@ void displayCurrentWeather()
     Serial.print("precipIntensity   : "); Serial.println(daily->precipIntensity[i]);
     Serial.print("precipProbability : "); Serial.println(daily->precipProbability[i]);
     Serial.print("precipType        : "); Serial.println(daily->precipType[i]);
+    Serial.print("precipAccumulation: "); Serial.println(daily->precipAccumulation[i]);
     Serial.print("temperatureHigh   : "); Serial.println(daily->temperatureHigh[i]);
     Serial.print("temperatureLow    : "); Serial.println(daily->temperatureLow[i]);
     Serial.print("humidity          : "); Serial.println(daily->humidity[i]);
