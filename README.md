@@ -6,5 +6,11 @@ Collects current weather plus hourly and daily forecasts.
 
 Example sketch sends collected data to the Serial port for API test.
 
-To do:
-The server uses https, may need to fetch+change the SHA1 fingerprint?
+TFT example is being updated to use anti-aliased fonts and new icons:
+
+![TFT screenshot](https://i.imgur.com/CjdKTlX.png)
+
+Todo:
+Add himidity and cloud cover to remaining corner.
+
+
