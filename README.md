@@ -10,11 +10,11 @@ TFT example is being updated to use anti-aliased fonts and brand new icons.
 
 ![TFT splash screen](https://i.imgur.com/gh75gd6.png)
 
-![TFT screenshot 1](https://i.imgur.com/CjdKTlX.png)
+![TFT screenshot 1](https://i.imgur.com/QMHXRaf.png)
 
-![TFT screenshot 2](https://i.imgur.com/KT3oQ8a.png)
 
 Todo:
-Add himidity and cloud cover to remaining corner.
+
+Upload new TFT sketch and library tweaks...
 
 
