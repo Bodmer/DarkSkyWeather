@@ -14,7 +14,7 @@ Latest screen grabs:
 
 ![TFT splash screen](https://i.imgur.com/gh75gd6.png)
 
-![TFT screenshot 1](https://i.imgur.com/QMHXRaf.png)
+![TFT screenshot 1](https://i.imgur.com/ORovwNY.png)
 
 
 Todo:
