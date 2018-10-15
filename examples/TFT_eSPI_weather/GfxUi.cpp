@@ -20,7 +20,7 @@ See more at http://blog.squix.ch
 
 // Adapted by Bodmer to use the TFT_eSPI library: https://github.com/Bodmer/TFT_eSPI
 // Functions no longer needed weeded out, Jpeg decoder functions added
-// drawBMP() updated to buffer in and out pixels
+// drawBMP() updated to buffer input and output pixels
 
 #include "GfxUi.h"
 
@@ -39,10 +39,7 @@ void GfxUi::drawProgressBar(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, ui
   _tft->fillRect(x0 + margin, y0 + margin, barWidth * percentage / 100.0, barHeight, barColor);
 }
 
-// This drawBMP function contains code from:
-// https://github.com/adafruit/Adafruit_ILI9341/blob/master/examples/spitftbitmap/spitftbitmap.ino
-// Here is Bodmer's version: this uses the ILI9341 CGRAM coordinate rotation features inside the display and
-// buffers both file and TFT pixel blocks, it typically runs about 2x faster for bottom up encoded BMP images
+// Here is Bodmer's version:
 
 //void GfxUi::drawBMP(String filename, uint8_t x, uint16_t y, boolean flip) { // Alernative for caller control of flip
 void GfxUi::drawBmp(String filename, uint8_t x, uint16_t y) {
@@ -198,7 +195,7 @@ uint32_t GfxUi::read32(fs::File &f) {
 //====================================================================================
 //   Opens the image file and prime the Jpeg decoder
 //====================================================================================
-void GfxUi::drawJpeg(const char *filename, int xpos, int ypos) {
+void GfxUi::drawJpeg(String filename, int xpos, int ypos) {
 
   Serial.println("===========================");
   Serial.print("Drawing file: "); Serial.println(filename);

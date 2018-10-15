@@ -7,12 +7,13 @@
 //====================================================================================
 
 // Time library:
-// http://www.arduino.cc/playground/Code/Time
-// latest may be here: https://www.pjrc.com/teensy/td_libs_Time.html
+// https://github.com/PaulStoffregen/Time
+
 #include <Time.h>
 
 // Time zone correction library:
 // https://github.com/JChristensen/Timezone
+
 #include <Timezone.h>
 
 // Libraries built into IDE
@@ -35,8 +36,8 @@ const char* ntpServerName = "pool.ntp.org";
 //IPAddress timeServerIP(129, 6, 15, 30); // time-c.nist.gov NTP server
 //IPAddress timeServerIP(24, 56, 178, 140); // wwv.nist.gov NTP server
 
-// Example time zone and DST corrections, see Timezone library documents to see how
-// to add more time zones
+// Example time zone and DST rules, see Timezone library documents to see how
+// to add more time zones https://github.com/PaulStoffregen/Time
 
 // Zone reference "UK" United Kingdom (London, Belfast)
 TimeChangeRule BST = {"BST", Last, Sun, Mar, 1, 60};        //British Summer (Daylight saving) Time
@@ -82,7 +83,6 @@ IPAddress timeServerIP; // Use server pool
 //                                  Variables
 //====================================================================================
 TimeChangeRule *tz1_Code;   // Pointer to the time change rule, use to get the TZ abbrev, e.g. "GMT"
-TimeChangeRule *tz2_Code;   // Pointer to anoth time change rule
 
 time_t utc = 0;
 
@@ -109,16 +109,19 @@ uint32_t no_packet_count = 0;
 
 
 //====================================================================================
-//                                    Update Time
+//                                    Function prototype
 //====================================================================================
 
-void requestTime(void);
+void syncTime(void);
 void displayTime(void);
 void printTime(time_t zone, char *tzCode);
 void decodeNTP(void);
 unsigned long sendNTPpacket(IPAddress& address);
 
-void requestTime(void)
+//====================================================================================
+//                                    Update Time
+//====================================================================================
+void syncTime(void)
 {
   // Don't send too often so we don't trigger Denial of Service
   if (nextSendTime < millis()) {
@@ -131,55 +134,36 @@ void requestTime(void)
 }
 
 //====================================================================================
-//                                  Supporting functions
+// Send an NTP request to the time server at the given address
 //====================================================================================
-void printTime(time_t zone, char *tzCode)
+unsigned long sendNTPpacket(IPAddress& address)
 {
-   String dateString = dayStr(weekday(zone));
-   dateString += " ";
-   dateString += day(zone);
-   if (day(zone) == 1 || day(zone) == 21 || day(zone) == 31) dateString += "st";
-   else if (day(zone) == 2 || day(zone) == 22) dateString += "nd";
-   else if (day(zone) == 3 || day(zone) == 23) dateString += "rd";
-   else dateString += "th";
+  // Serial.println("sending NTP packet...");
+  // set all bytes in the buffer to 0
+  memset(packetBuffer, 0, NTP_PACKET_SIZE);
+  // Initialize values needed to form NTP request
+  // (see URL above for details on the packets)
+  packetBuffer[0] = 0b11100011;   // LI, Version, Mode
+  packetBuffer[1] = 0;            // Stratum, or type of clock
+  packetBuffer[2] = 6;            // Polling Interval
+  packetBuffer[3] = 0xEC;         // Peer Clock Precision
 
-   dateString += " ";
-   dateString += monthStr(month(zone));
-   dateString += " ";
-   dateString += year(zone);
+  // 8 bytes of zero for Root Delay & Root Dispersion
 
-   // Print time to serial port
-   Serial.print(hour(zone));
-   Serial.print(":");
-   Serial.print(minute(zone));
-   Serial.print(":");
-   Serial.print(second(zone));
-   Serial.print(" ");
-   // Print time zone
-   Serial.print(tzCode);
-   Serial.print(" ");
+  packetBuffer[12]  = 49;
+  packetBuffer[13]  = 0x4E;
+  packetBuffer[14]  = 49;
+  packetBuffer[15]  = 52;
 
-   // Print date
-   Serial.print(day(zone));
-   Serial.print("/");
-   Serial.print(month(zone));
-   Serial.print("/");
-   Serial.print(year(zone));
-   Serial.print("  ");
-
-   // Now test some other functions that might be useful one day!
-   Serial.print(dayStr(weekday(zone)));
-   Serial.print(" ");
-   Serial.print(monthStr(month(zone)));
-   Serial.print(" ");
-   Serial.print(dayShortStr(weekday(zone)));
-   Serial.print(" ");
-   Serial.print(monthShortStr(month(zone)));
-   Serial.println();
+  // all NTP fields have been given values, now
+  // you can send a packet requesting a timestamp:
+  udp.beginPacket(address, 123); //NTP requests are to port 123
+  udp.write(packetBuffer, NTP_PACKET_SIZE);
+  udp.endPacket();
 }
 
 //====================================================================================
-// Decode the NTP message and print to serial port
+// Decode the NTP message and print status to serial port
 //====================================================================================
 void decodeNTP(void)
 {
@@ -188,8 +172,10 @@ void decodeNTP(void)
   while (millis() < waitTime && !timeValid)
   {
     yield();
-    if (udp.parsePacket()) {
+    if (udp.parsePacket())
+    {
       newRecvTime = millis();
+
       // We've received a packet, read the data from it
       udp.read(packetBuffer, NTP_PACKET_SIZE); // read the packet into the buffer
 
@@ -210,43 +196,35 @@ void decodeNTP(void)
       // Combine the four bytes (two words) into a long integer
       // this is NTP time (seconds since Jan 1 1900):
       unsigned long secsSince1900 = highWord << 16 | lowWord;
-      utc = secsSince1900 - 2208988800UL;
-
-      setTime(utc); // Set UTC time
-      timeValid = true;
 
       // Now convert NTP Unix time (Seconds since Jan 1 1900) into everyday time:
       // UTC time starts on Jan 1 1970. In seconds the difference is 2208988800:
-      const unsigned long seventyYears = 2208988800UL;
-      // Subtract seventy years:
-      unsigned long epoch = secsSince1900 - seventyYears;
+      utc = secsSince1900 - 2208988800UL;
+
+      setTime(utc);      // Set system clock to utc time (not time zone compensated)
+
+      timeValid = true;
 
       // Print the hour, minute and second:
-      Serial.print("Received NTP UTC time : ");       // UTC is the time at Greenwich Meridian (GMT)
+      Serial.print("Received NTP UTC time : ");
 
-      uint8_t hh = (epoch  % 86400L) / 3600;
-      Serial.print((epoch  % 86400L) / 3600); // print the hour (86400 equals secs per day)
+      uint8_t hh = hour(utc);
+      Serial.print(hh); // print the hour (86400 equals secs per day)
+
       Serial.print(':');
-      if ( ((epoch % 3600) / 60) < 10 ) {
-        // In the first 10 minutes of each hour, we'll want a leading '0'
-        Serial.print('0');
-      }
-
-      uint8_t mm = (epoch  % 3600) / 60;
+      uint8_t mm = minute(utc);
+      if (mm < 10 ) Serial.print('0');
       Serial.print(mm); // print the minute (3600 equals secs per minute)
-      Serial.print(':');
 
-      uint8_t ss = epoch % 60;
-      if ( ss < 10 ) {
-        // In the first 10 seconds of each minute, we'll want a leading '0'
-        Serial.print('0');
-      }
+      Serial.print(':');
+      uint8_t ss = second(utc);
+      if ( ss < 10 ) Serial.print('0');
       Serial.println(ss); // print the second
     }
   }
 
   // Keep a count of missing or bad NTP replies
-  
+
   if ( timeValid ) {
     no_packet_count = 0;
   }
@@ -256,7 +234,7 @@ void decodeNTP(void)
     no_packet_count++;
   }
 
-  if (no_packet_count >=10) {
+  if (no_packet_count >= 10) {
     no_packet_count = 0;
     // TODO: Flag the lack of sync on the display here
     Serial.println("No NTP packet in last 10 minutes");
@@ -264,64 +242,51 @@ void decodeNTP(void)
 }
 
 //====================================================================================
-// Send an NTP request to the time server at the given address
+//                                  Debug use only
 //====================================================================================
-unsigned long sendNTPpacket(IPAddress& address)
+void printTime(time_t t, char *tzCode)
 {
-  // Serial.println("sending NTP packet...");
-  // set all bytes in the buffer to 0
-  memset(packetBuffer, 0, NTP_PACKET_SIZE);
-  // Initialize values needed to form NTP request
-  // (see URL above for details on the packets)
-  packetBuffer[0] = 0b11100011;   // LI, Version, Mode
-  packetBuffer[1] = 0;     // Stratum, or type of clock
-  packetBuffer[2] = 6;     // Polling Interval
-  packetBuffer[3] = 0xEC;  // Peer Clock Precision
-  // 8 bytes of zero for Root Delay & Root Dispersion
-  packetBuffer[12]  = 49;
-  packetBuffer[13]  = 0x4E;
-  packetBuffer[14]  = 49;
-  packetBuffer[15]  = 52;
+  String dateString = dayStr(weekday(t));
+  dateString += " ";
+  dateString += day(t);
+  if (day(t) == 1 || day(t) == 21 || day(t) == 31) dateString += "st";
+  else if (day(t) == 2 || day(t) == 22) dateString += "nd";
+  else if (day(t) == 3 || day(t) == 23) dateString += "rd";
+  else dateString += "th";
 
-  // all NTP fields have been given values, now
-  // you can send a packet requesting a timestamp:
-  udp.beginPacket(address, 123); //NTP requests are to port 123
-  udp.write(packetBuffer, NTP_PACKET_SIZE);
-  udp.endPacket();
+  dateString += " ";
+  dateString += monthStr(month(t));
+  dateString += " ";
+  dateString += year(t);
+
+  // Print time to serial port
+  Serial.print(hour(t));
+  Serial.print(":");
+  Serial.print(minute(t));
+  Serial.print(":");
+  Serial.print(second(t));
+  Serial.print(" ");
+  // Print time t
+  Serial.print(tzCode);
+  Serial.print(" ");
+
+  // Print date
+  Serial.print(day(t));
+  Serial.print("/");
+  Serial.print(month(t));
+  Serial.print("/");
+  Serial.print(year(t));
+  Serial.print("  ");
+
+  // Now test some other functions that might be useful one day!
+  Serial.print(dayStr(weekday(t)));
+  Serial.print(" ");
+  Serial.print(monthStr(month(t)));
+  Serial.print(" ");
+  Serial.print(dayShortStr(weekday(t)));
+  Serial.print(" ");
+  Serial.print(monthShortStr(month(t)));
+  Serial.println();
 }
 
 //====================================================================================
-
-// This function is not used at the moment
-void displayTime(void)
-{
-
-  if (now() != utc) { //update the display only if time has changed
-    newTickTime = millis();
-    utc = now(); // utc is a static copy of the running utc time now
-
- // ##################################################################################################
- // #    The next 2 code lines are the ones to change if different time zones are to be displayed    #
- // #                                                                                                #
-    time_t analogue_time =    UK.toLocal(utc, &tz1_Code);  // Convert UTC to UK time, get zone code  #
-    time_t digital_time  =    UK.toLocal(utc, &tz2_Code);  // Convert UTC to EU time, get zone code  #
- // #                      ^^^^^  change this, see "Setting" section above for zone references       #
- // #                                                                                                #
- // ##################################################################################################
-
-
-    // If we rebooted and time is now valid then update the clock hands
-    if (rebooted && timeValid) {
-      rebooted = 0;
-    }
-
-    // If minute has changed then request new time from NTP server
-    if (minute() != lastMinute) {
-      lastMinute = minute();
-      requestTime();
-    }
-
-    lastTickTime = newTickTime;
-  }
-}
-

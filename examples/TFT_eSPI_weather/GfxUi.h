@@ -18,11 +18,10 @@ SOFTWARE.
 
 See more at http://blog.squix.ch
 
-Adapted by Bodmer to use the faster TFT_eSPI library:
+Adapted by Bodmer to use the TFT_eSPI library:
 https://github.com/Bodmer/TFT_eSPI
 
 */
-
 
 #include <TFT_eSPI.h> // Hardware-specific library
 
@@ -46,7 +45,7 @@ class GfxUi {
     void drawBmp(String filename, uint8_t x, uint16_t y);
     void drawProgressBar(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t percentage, uint16_t frameColor, uint16_t barColor);
     void jpegInfo();
-    void drawJpeg(const char *filename, int xpos, int ypos);
+    void drawJpeg(String filename, int xpos, int ypos);
     void jpegRender(int xpos, int ypos);
     
   private:
@@ -57,4 +56,3 @@ class GfxUi {
 };
 
 #endif
-

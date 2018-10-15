@@ -23,11 +23,13 @@ void listFiles(void) {
   while (dir.next()) {
     String fileName = dir.fileName();
     Serial.print(fileName);
-    int spaces = 25 - fileName.length(); // Tabulate nicely
+    int spaces = 30 - fileName.length(); // Tabulate nicely
+    if (spaces < 0) spaces = 0;
     while (spaces--) Serial.print(" ");
     fs::File f = dir.openFile("r");
     Serial.print(f.size()); Serial.println(" bytes");
     totalBytes += f.size();
+    yield();
   }
   Serial.println(); Serial.print("Total = ");
   int spaces = 25 - 8; // Tabulate nicely
@@ -39,4 +41,3 @@ void listFiles(void) {
   delay(1000);
 }
 //====================================================================================
-
