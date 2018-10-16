@@ -1,10 +1,17 @@
 //  Example from Dark Sky Weather library: https://github.com/Bodmer/DarkSkyWeather
 //  Adapted by Bodmer to use the TFT_eSPI library:  https://github.com/Bodmer/TFT_eSPI
 
+//  ################################## IMPORTANT ###################################
+//  Upload the fonts and icons to SPIFFS (must set at least 2M for SPIFFS) using the
+//  "Tools" "ESP8266 Sketch Data Upload" menu option in the IDE.  To add this option
+//  follow instructions here: https://github.com/esp8266/arduino-esp8266fs-plugin
+//  Close the IDE and open again to see the new menu option.
+
 //  This sketch uses ESP8266 libraries and is not currently compatible with the ESP32.
 
-//  >>>  IMPORTANT  <<<: Modify setup in All_Settings.h tab to configure your location etc
+//  Modify setup in All_Settings.h tab to configure your location etc
 //  ESP8266 pin connections to the TFT are defined in the TFT_eSPI library.
+//  ################################################################################
 
 //  Original by Daniel Eichhorn, see license at end of file.
 
