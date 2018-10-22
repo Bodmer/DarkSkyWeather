@@ -395,11 +395,13 @@ void DSWforecast::value(String value) {
 
   // Hourly data[N] array
   if (data_set == "hourly") {
-    if (currentKey == "time" && hourly_index < MAX_HOURS - 1) {
+    if (currentKey == "time") {
       // Only increment after the first entry
       if (hourly->time[0] > 0) hourly_index++;
+      if (hourly_index >= MAX_HOURS) return;
       hourly->time[hourly_index] = (uint32_t)value.toInt();
     }
+    else
     if (currentKey == "summary") hourly->summary[hourly_index] = value;
     else
     if (currentKey == "precipIntensity") hourly->precipIntensity[hourly_index] = value.toFloat();
@@ -423,14 +425,14 @@ void DSWforecast::value(String value) {
 
   // Daily data[N] array
   if (data_set == "daily") {
-    if (currentKey == "time"  && daily_index < MAX_DAYS - 1) {
+    if (currentKey == "time") {
       // Only increment after the first entry
       if (daily->time[0] > 0) daily_index++;
+      if (daily_index >= MAX_DAYS) return;
       daily->time[daily_index] = (uint32_t)value.toInt();
     }
-    if (currentKey == "summary") daily->summary[daily_index] = value;
     else
-    if (currentKey == "time") daily->time[daily_index] = (uint32_t)value.toInt();
+    if (currentKey == "summary") daily->summary[daily_index] = value;
     else
     if (currentKey == "icon") daily->icon[daily_index] = value;
     else
