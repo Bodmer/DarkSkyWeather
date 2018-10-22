@@ -100,7 +100,7 @@ typedef struct DSW_minutely {
 /***************************************************************************************
 ** Description:   Structure for hourly weather
 ***************************************************************************************/
-#define MAX_HOURS 12 // Can be up to 48 but may run out of memory for > 12
+#define MAX_HOURS 4 // Can be up to 48 but may run out of memory if used
 typedef struct DSW_hourly {
 
   String   overallSummary;
@@ -120,7 +120,7 @@ typedef struct DSW_hourly {
 /***************************************************************************************
 ** Description:   Structure for daily weather
 ***************************************************************************************/
-#define MAX_DAYS 7 // Today + 7 days = 8 maximum
+#define MAX_DAYS 8 // Today + 7 days = 8 maximum
 typedef struct DSW_daily {
 
   String   overallSummary;

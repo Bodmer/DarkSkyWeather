@@ -1,0 +1,21 @@
+{
+  "name": "DarkSkyWeather",
+  "version": "0.0.1",
+  "keywords": "weather, TFT_eSPI, tft, display, ESP8266, NodeMCU, ESP32, M5Stack, ILI9341, ILI9486, ILI9488",
+  "description": "Dark Sky Weather API client for ESP8266 and ESP32",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/Bodmer/DarkSkyWeather"
+  },
+  "authors":
+  [
+    {
+        "name": "Bodmer",
+        "email": "bodmer@anola.net",
+        "maintainer": true
+    }
+  ],
+  "frameworks": "arduino",
+  "platforms": "espressif8266, espressif32"
+}

@@ -6,7 +6,12 @@
 
 // See license.txt in root folder of library
 
-#include <ESP8266WiFi.h>
+#ifdef ESP8266
+  #include <ESP8266WiFi.h>
+#else
+  #include <WiFi.h>
+#endif
+
 #include <WiFiClientSecure.h>
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
@@ -17,29 +22,42 @@
 ** Function name:           parseRequest
 ** Description:             Fetches the JSON message and feeds to the parser
 ***************************************************************************************/
-//#define SHOW_JSON  // Debug only - simple formatting of whole JSON message
-//#define AXTLS      // Use older axTLS instead of BearSSL
-//#define SECURE_SSL // Use SHA1 fingerprint with BearSSL
+//#define SHOW_HEADER // For checking response only
+//#define SHOW_JSON   // Debug only - simple formatting of whole JSON message
+
+//#define AXTLS       // For ESP8266: use older axTLS instead of BearSSL
+//#define SECURE_SSL  // For ESP8266: use SHA1 fingerprint with BearSSL
+
+#ifdef ESP32
 bool DSWrequest::parseRequest(String url) {
 
   uint32_t dt = millis();
 
-  // SHA1 certificate fingerprint
-#ifdef AXTLS
-  const char* fingerprint = "EB:C2:67:D1:B1:C6:77:90:51:C1:4A:0A:BA:83:E1:F0:6D:73:DD:B8";
-  WiFiClientSecure client;
-#else
-  // Must use namespace:: to select BearSSL
-  BearSSL::WiFiClientSecure client;
+  const char* dsw_ca_cert = \
+  "-----BEGIN CERTIFICATE-----\n" \
+  "MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF\n" \
+  "ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6\n" \
+  "b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL\n" \
+  "MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv\n" \
+  "b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj\n" \
+  "ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM\n" \
+  "9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw\n" \
+  "IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6\n" \
+  "VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L\n" \
+  "93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm\n" \
+  "jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC\n" \
+  "AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA\n" \
+  "A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI\n" \
+  "U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs\n" \
+  "N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv\n" \
+  "o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU\n" \
+  "5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy\n" \
+  "rqXRfboQnoZsG4q5WTP468SQvvG5\n" \
+  "-----END CERTIFICATE-----\n";
 
-  #ifdef SECURE_SSL
-    // BearSSL requires a different fingerprint format and setFingerprint() must be called
-    const uint8_t fp[20] = {0xEB,0xC2,0x67,0xD1,0xB1,0xC6,0x77,0x90,0x51,0xC1,0x4A,0x0A,0xBA,0x83,0xE1,0xF0,0x6D,0x73,0xDD,0xB8};
-    client.setFingerprint(fp);
-  #else
-    client.setInsecure();
-  #endif
-#endif
+  WiFiClientSecure client;
+
+  client.setCACert(dsw_ca_cert);
 
   JsonStreamingParser parser;
   parser.setListener(this);
@@ -52,7 +70,106 @@ bool DSWrequest::parseRequest(String url) {
     return false;
   }
 
-#ifdef AXTLS // BearSSL does not support verify() and always returns false.
+  uint32_t timeout = millis();
+  char c = 0;
+  int ccount = 0;
+  uint32_t readCount = 0;
+
+  // Send GET request
+  Serial.println("\nSending GET request to api.darksky.net...");
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n");
+
+  // Pull out any header, X-Forecast-API-Calls: reports current daily API call count
+  while (client.connected())
+  {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("Header end found");
+      break;
+    }
+
+    // Show the API call count
+    if (line.indexOf("X-Forecast-API-Calls") >= 0) Serial.println(line);
+#ifdef SHOW_HEADER
+    Serial.println(line);
+#endif
+
+    if ((millis() - timeout) > 5000UL)
+    {
+      Serial.println ("HTTP header timeout");
+      client.stop();
+      return false;
+    }
+  }
+
+  Serial.println("\nParsing JSON");
+  
+  // Parse the JSON data, available() includes yields
+  while ( client.available() > 0 )
+  {
+    c = client.read();
+    parser.parse(c);
+#ifdef SHOW_JSON
+    if (c == '{' || c == '[' || c == '}' || c == ']') Serial.println();
+    Serial.print(c); if (ccount++ > 100 && c == ',') {ccount = 0; Serial.println();}
+#endif
+
+    if ((millis() - timeout) > 8000UL)
+    {
+      Serial.println ("JSON parse client timeout");
+      parser.reset();
+      client.stop();
+      return false;
+    }
+  }
+
+  Serial.println("");
+  Serial.print("Done in "); Serial.print(millis()-dt); Serial.println(" ms\n");
+
+  parser.reset();
+
+  client.stop();
+  
+  // A message has been parsed but the datapoint correctness is unknown
+  return true;
+}
+
+#else // ESP8266 version
+
+bool DSWrequest::parseRequest(String url) {
+
+  uint32_t dt = millis();
+
+  // SHA1 certificate fingerprint
+  #if defined(AXTLS)
+    const char* fingerprint = "EB:C2:67:D1:B1:C6:77:90:51:C1:4A:0A:BA:83:E1:F0:6D:73:DD:B8";
+    WiFiClientSecure client;
+  #else
+    // Must use namespace:: to select BearSSL
+    BearSSL::WiFiClientSecure client;
+
+    #ifdef SECURE_SSL
+      // BearSSL requires a different fingerprint format and setFingerprint() must be called
+      const uint8_t fp[20] = {0xEB,0xC2,0x67,0xD1,0xB1,0xC6,0x77,0x90,0x51,0xC1,0x4A,0x0A,0xBA,0x83,0xE1,0xF0,0x6D,0x73,0xDD,0xB8};
+      client.setFingerprint(fp);
+    #else
+      client.setInsecure();
+    #endif
+  #endif
+
+  JsonStreamingParser parser;
+  parser.setListener(this);
+
+  const char*  host = "api.darksky.net";
+
+  if (!client.connect(host, 443))
+  {
+    Serial.println("Connection failed.");
+    return false;
+  }
+
+#if defined(AXTLS)
+  // BearSSL does not support verify() and always returns false.
   if (client.verify(fingerprint, host))
   {
     Serial.println("Certificate OK");
@@ -68,54 +185,56 @@ bool DSWrequest::parseRequest(String url) {
   uint32_t timeout = millis();
   char c = 0;
   int ccount = 0;
+  uint32_t readCount = 0;
 
   // Send GET request
   Serial.println("Sending GET request to api.darksky.net...");
   client.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n");
 
-  // Pull out any header
-  while (client.connected())
+  // Pull out any header, X-Forecast-API-Calls: reports current daily API call count
+  while (client.available() || client.connected())
   {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("Header end found");
+      break;
+    }
 
-    while (client.available() > 0 && c != '{') c = client.read();
-    
-    if (c == '{') break;
+    // Show the API call count
+    if (line.indexOf("X-Forecast-API-Calls") >= 0) Serial.println(line);
+#ifdef SHOW_HEADER
+    Serial.println(line);
+#endif
 
     if ((millis() - timeout) > 5000UL)
     {
-      Serial.println ("JSON header timeout");
+      Serial.println ("HTTP header timeout");
       client.stop();
       return false;
     }
-    yield();
   }
 
-  // Start parser with '{'
-  parser.parse(c);
   Serial.println("Parsing JSON");
-
-  // Parse the JSON data
-  while (client.connected() || client.available() > 0)
+  
+  // Parse the JSON data, available() includes yields
+  while ((readCount = client.available()) || client.connected())
   {
-    yield();
-
-    while (client.available() > 0)
+    while (readCount--)
     {
       c = client.read();
       parser.parse(c);
-      yield();
-
-      if ((millis() - timeout) > 8000UL)
-      {
-        Serial.println ("JSON client timeout");
-        parser.reset();
-        client.stop();
-        return false;
-      }
-#ifdef SHOW_JSON
+  #ifdef SHOW_JSON
       if (c == '{' || c == '[' || c == '}' || c == ']') Serial.println();
       Serial.print(c); if (ccount++ > 100 && c == ',') {ccount = 0; Serial.println();}
-#endif
+  #endif
+    }
+
+    if ((millis() - timeout) > 8000UL)
+    {
+      Serial.println ("JSON client timeout");
+      parser.reset();
+      client.stop();
+      return false;
     }
   }
 
@@ -129,6 +248,7 @@ bool DSWrequest::parseRequest(String url) {
   // A message has been parsed but the datapoint correctness is unknown
   return true;
 }
+#endif
 
 /***************************************************************************************
 ** Function name:           key etc
@@ -185,12 +305,12 @@ bool DSWforecast::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_dail
   this->hourly  = hourly;
   this->daily   = daily;
 
-  // Exclude some info to shorten JSON message
+  // Exclude some info to reduce memory needed
   String exclude = "";
-  //exclude += "currently,";   // summary, then weather every hour for 48 hours
-  exclude += "hourly,";   // summary, then weather every hour for 48 hours
+  if (!current) exclude += "currently,";   // summary, then current weather
+  if (!hourly)  exclude += "hourly,";      // summary, then weather every hour for 48 hours
+  if (!daily)   exclude += "daily,";       // summary, then daily detailed weather for one week (7 days)
   exclude += "minutely,"; // not supported yet, summary, then rain predictions every minute for next hour
-  //exclude += "daily,";    // summary, then daily detailed weather for one week (7 days)
   exclude += "alerts,";   // special warnings, typically none
   exclude += "flags";     // misc info
 
