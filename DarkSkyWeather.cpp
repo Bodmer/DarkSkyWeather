@@ -13,23 +13,71 @@
 #endif
 
 #include <WiFiClientSecure.h>
+
+// The streaming parser to use is not the Arduino IDE library manager default,
+// but this one:
+// https://github.com/Bodmer/json-streaming-parser
 #include <JsonListener.h>
 #include <JsonStreamingParser.h>
 
 #include "DarkSkyWeather.h"
 
-/***************************************************************************************
-** Function name:           parseRequest
-** Description:             Fetches the JSON message and feeds to the parser
-***************************************************************************************/
 //#define SHOW_HEADER // For checking response only
 //#define SHOW_JSON   // Debug only - simple formatting of whole JSON message
 
 //#define AXTLS       // For ESP8266: use older axTLS instead of BearSSL
 //#define SECURE_SSL  // For ESP8266: use SHA1 fingerprint with BearSSL
 
-#ifdef ESP32
-bool DSWrequest::parseRequest(String url) {
+/***************************************************************************************
+** Function name:           getForecast
+** Description:             Setup the weather forecast request from darksky.net
+***************************************************************************************/
+// The structures etc are created by the sketch and passed to this function.
+// Pass a NULL for current, hourly or daily pointers to exclude in response.
+bool DS_Weather::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily *daily,
+                             String api_key, String latitude, String longitude,
+                             String units, String language) {
+
+  data_set = "";
+  hourly_index = 0;
+  daily_index = 0;
+
+  // Local copies of structure pointers, the structures are filled during parsing
+  this->current = current;
+  this->hourly  = hourly;
+  this->daily   = daily;
+
+  // Exclude some info by passing fn a NULL pointer to reduce memory needed
+  String exclude = "";
+  if (!current) exclude += "currently,";   // summary, then current weather
+  if (!hourly)  exclude += "hourly,";      // summary, then weather every hour for 48 hours
+  if (!daily)   exclude += "daily,";       // summary, then daily detailed weather for one week (7 days)
+  exclude += "minutely,"; // not supported yet, summary, then rain predictions every minute for next hour
+  exclude += "alerts,";   // special warnings, typically none
+  exclude += "flags";     // misc info
+
+  String url = "https://api.darksky.net/forecast/" + api_key + "/"
+               + latitude + "," + longitude + "?exclude=" + exclude
+               + "&units=" + units + "&lang=" + language;
+
+  // Send GET request and feed the parser
+  bool result = parseRequest(url);
+
+  // Null out pointers to prevent crashes
+  this->current = nullptr;
+  this->hourly  = nullptr;
+  this->daily   = nullptr;
+
+  return result;
+}
+
+#ifdef ESP32 // Decide if ESP32 or ESP8266 parseRequest available
+
+/***************************************************************************************
+** Function name:           parseRequest (for ESP32)
+** Description:             Fetches the JSON message and feeds to the parser
+***************************************************************************************/
+bool DS_Weather::parseRequest(String url) {
 
   uint32_t dt = millis();
 
@@ -88,10 +136,11 @@ bool DSWrequest::parseRequest(String url) {
       break;
     }
 
-    // Show the API call count
-    if (line.indexOf("X-Forecast-API-Calls") >= 0) Serial.println(line);
 #ifdef SHOW_HEADER
     Serial.println(line);
+#else
+    // Show the API call count
+    if (line.indexOf("X-Forecast-API-Calls") >= 0) Serial.println(line);
 #endif
 
     if ((millis() - timeout) > 5000UL)
@@ -103,23 +152,27 @@ bool DSWrequest::parseRequest(String url) {
   }
 
   Serial.println("\nParsing JSON");
-  
+
   // Parse the JSON data, available() includes yields
-  while ( client.available() > 0 )
+  while ( client.available() > 0 || client.connected())
   {
-    c = client.read();
-    parser.parse(c);
+    while(client.available() > 0)
+    {
+      c = client.read();
+      parser.parse(c);
 #ifdef SHOW_JSON
-    if (c == '{' || c == '[' || c == '}' || c == ']') Serial.println();
-    Serial.print(c); if (ccount++ > 100 && c == ',') {ccount = 0; Serial.println();}
+      if (c == '{' || c == '[' || c == '}' || c == ']') Serial.println();
+      Serial.print(c); if (ccount++ > 100 && c == ',') {ccount = 0; Serial.println();}
 #endif
 
-    if ((millis() - timeout) > 8000UL)
-    {
-      Serial.println ("JSON parse client timeout");
-      parser.reset();
-      client.stop();
-      return false;
+      if ((millis() - timeout) > 8000UL)
+      {
+        Serial.println ("JSON parse client timeout");
+        parser.reset();
+        client.stop();
+        return false;
+      }
+      yield();
     }
   }
 
@@ -136,7 +189,11 @@ bool DSWrequest::parseRequest(String url) {
 
 #else // ESP8266 version
 
-bool DSWrequest::parseRequest(String url) {
+/***************************************************************************************
+** Function name:           parseRequest (for ESP8266)
+** Description:             Fetches the JSON message and feeds to the parser
+***************************************************************************************/
+bool DS_Weather::parseRequest(String url) {
 
   uint32_t dt = millis();
 
@@ -200,10 +257,11 @@ bool DSWrequest::parseRequest(String url) {
       break;
     }
 
-    // Show the API call count
-    if (line.indexOf("X-Forecast-API-Calls") >= 0) Serial.println(line);
 #ifdef SHOW_HEADER
     Serial.println(line);
+#else
+    // Show the API call count
+    if (line.indexOf("X-Forecast-API-Calls") >= 0) Serial.println(line);
 #endif
 
     if ((millis() - timeout) > 5000UL)
@@ -248,95 +306,65 @@ bool DSWrequest::parseRequest(String url) {
   // A message has been parsed but the datapoint correctness is unknown
   return true;
 }
-#endif
+
+#endif // ESP32 or ESP8266 parseRequest
 
 /***************************************************************************************
 ** Function name:           key etc
-** Description:             These are called when parseing the JSON message
+** Description:             These functions are called while parsing the JSON message
 ***************************************************************************************/
-void DSWrequest::key(String key) {
+void DS_Weather::key(const char *key) {
   //Serial.print(">>> Key >>>" + key);
   currentKey = key;
 }
 
-void DSWrequest::startDocument() {
+void DS_Weather::startDocument() {
   //Serial.print(">>> Start document >>>");
   currentParent = currentKey = "";
 }
 
-void DSWrequest::endDocument() {
+void DS_Weather::endDocument() {
   //Serial.print("<<< End document <<<");
 }
 
-void DSWrequest::startObject() {
+void DS_Weather::startObject() {
   //Serial.print(">>> Start object >>>");
   currentParent = currentKey;
 }
 
-void DSWrequest::endObject() {
+void DS_Weather::endObject() {
   //Serial.print("<<< End object <<<");
   currentParent = "";
 }
 
-void DSWrequest::startArray() {
+void DS_Weather::startArray() {
   //Serial.print(">>> Start array >>>");
 }
 
-void DSWrequest::endArray() {
+void DS_Weather::endArray() {
   //Serial.print("<<< End array <<<");
 }
 
-void DSWrequest::whitespace(char c) {
+void DS_Weather::whitespace(char c) {
 }
 
-/***************************************************************************************
-** Function name:           getForecast
-** Description:             Setup the weather forecast request from darksky.net
-***************************************************************************************/
-// The structures etc are created by the sketch and passed to this function.
-bool DSWforecast::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily  *daily, String api_key, String latitude, String longitude, String units, String language) {
-
-  data_set = "";
-  hourly_index = 0;
-  daily_index = 0;
-
-  // Local copies of structure pointers
-  this->current = current;
-  this->hourly  = hourly;
-  this->daily   = daily;
-
-  // Exclude some info to reduce memory needed
-  String exclude = "";
-  if (!current) exclude += "currently,";   // summary, then current weather
-  if (!hourly)  exclude += "hourly,";      // summary, then weather every hour for 48 hours
-  if (!daily)   exclude += "daily,";       // summary, then daily detailed weather for one week (7 days)
-  exclude += "minutely,"; // not supported yet, summary, then rain predictions every minute for next hour
-  exclude += "alerts,";   // special warnings, typically none
-  exclude += "flags";     // misc info
-
-  String url = "https://api.darksky.net/forecast/" + api_key + "/" + latitude + "," + longitude + "?exclude=" + exclude + "&units=" + units;
-
-  // Send GET request and feed the parser
-  bool result = parseRequest(url);
-
-  // Null out pointers to prevent crashes
-  this->current = nullptr;
-  this->hourly  = nullptr;
-  this->daily   = nullptr;
-
-  return result;
+void DS_Weather::error( const char *message ) {
+  Serial.print("\nParse error message: ");
+  Serial.print(message);
 }
 
 /***************************************************************************************
 ** Function name:           updateForecast
-** Description:             Store the parse data in the structures for sketch access
+** Description:             Stores the parsed data in the structures for sketch access
 ***************************************************************************************/
-void DSWforecast::value(String value) {
+void DS_Weather::value(const char *val) {
+
+   String value = val;
 
   // Start of JSON
-  if (currentParent == "") {
-    if (currentKey == "timezone") current->timezone = value;
-  }
+  //if (currentParent == "") {
+  //  if (currentKey == "timezone") current->timezone = value;
+  //}
 
   // Current forecast - no array index
   if (currentParent == "currently") {
@@ -345,13 +373,13 @@ void DSWforecast::value(String value) {
     else
     if (currentKey == "summary") current->summary = value;
     else
-    if (currentKey == "icon") current->icon = value;
-    else
-    if (currentKey == "precipIntensity") current->precipIntensity = value.toFloat();
-    else
-    if (currentKey == "precipType") current->precipType = value;
-    else
-    if (currentKey == "precipProbability") current->precipProbability = (uint8_t)(100 * (value.toFloat()));
+    if (currentKey == "icon") current->icon = iconIndex(val);
+    //else
+    //if (currentKey == "precipIntensity") current->precipIntensity = value.toFloat();
+    //else
+    //if (currentKey == "precipType") current->precipType = iconIndex(val);
+    //else
+    //if (currentKey == "precipProbability") current->precipProbability = (uint8_t)(100 * (value.toFloat()));
     else
     if (currentKey == "temperature") current->temperature = value.toFloat();
     else
@@ -360,8 +388,8 @@ void DSWforecast::value(String value) {
     if (currentKey == "pressure") current->pressure = value.toFloat();
     else
     if (currentKey == "windSpeed") current->windSpeed = value.toFloat();
-    else
-    if (currentKey == "windGust") current->windGust = value.toFloat();
+    //else
+    //if (currentKey == "windGust") current->windGust = value.toFloat();
     else
     if (currentKey == "windBearing") current->windBearing = (uint16_t)value.toInt();
     else
@@ -395,10 +423,14 @@ void DSWforecast::value(String value) {
 
   // Hourly data[N] array
   if (data_set == "hourly") {
+    if (hourly_index >= MAX_HOURS) return;
     if (currentKey == "time") {
       // Only increment after the first entry
-      if (hourly->time[0] > 0) hourly_index++;
-      if (hourly_index >= MAX_HOURS) return;
+      if (hourly->time[0] > 0)
+      {
+        hourly_index++;
+        if (hourly_index >= MAX_HOURS) return;
+      }
       hourly->time[hourly_index] = (uint32_t)value.toInt();
     }
     else
@@ -406,7 +438,7 @@ void DSWforecast::value(String value) {
     else
     if (currentKey == "precipIntensity") hourly->precipIntensity[hourly_index] = value.toFloat();
     else
-    if (currentKey == "precipType") hourly->precipType[hourly_index] = value;
+    if (currentKey == "precipType") hourly->precipType[hourly_index] = iconIndex(val);
     else
     if (currentKey == "precipProbability") hourly->precipProbability[hourly_index] = (uint8_t)(100 * (value.toFloat()));
     else
@@ -416,7 +448,7 @@ void DSWforecast::value(String value) {
     else
     if (currentKey == "pressure") hourly->pressure[hourly_index] = value.toFloat();
     else
-    if (currentKey == "cloudCover") daily->cloudCover[hourly_index] = (uint8_t)(100 * (value.toFloat()));
+    if (currentKey == "cloudCover") hourly->cloudCover[hourly_index] = (uint8_t)(100 * (value.toFloat()));
     //else
     //if (currentKey == "x") hourly->x[hourly_index] = value;
     return;
@@ -425,49 +457,68 @@ void DSWforecast::value(String value) {
 
   // Daily data[N] array
   if (data_set == "daily") {
+    if (daily_index >= MAX_DAYS) return;
     if (currentKey == "time") {
       // Only increment after the first entry
-      if (daily->time[0] > 0) daily_index++;
-      if (daily_index >= MAX_DAYS) return;
+      if (daily->time[0] > 0)
+      {
+        daily_index++;
+        if (daily_index >= MAX_DAYS) return;
+      }
       daily->time[daily_index] = (uint32_t)value.toInt();
     }
     else
     if (currentKey == "summary") daily->summary[daily_index] = value;
     else
-    if (currentKey == "icon") daily->icon[daily_index] = value;
+    if (currentKey == "icon") daily->icon[daily_index] = iconIndex(val);
     else
     if (currentKey == "sunriseTime") daily->sunriseTime[daily_index] = (uint32_t)value.toInt();
     else
     if (currentKey == "sunsetTime") daily->sunsetTime[daily_index] = (uint32_t)value.toInt();
     else
     if (currentKey == "moonPhase") daily->moonPhase[daily_index] = (uint8_t)(100 * (value.toFloat()));
-    else
-    if (currentKey == "precipIntensity") daily->precipIntensity[daily_index] = value.toFloat();
-    else
-    if (currentKey == "precipProbability") daily->precipProbability[daily_index] = (uint8_t)(100 * (value.toFloat()));
-    else
-    if (currentKey == "precipType") daily->precipType[daily_index] = value;
-    else
-    if (currentKey == "precipAccumulation") daily->precipAccumulation[daily_index] = value.toFloat();
+    //else
+    //if (currentKey == "precipIntensity") daily->precipIntensity[daily_index] = value.toFloat();
+    //else
+    //if (currentKey == "precipProbability") daily->precipProbability[daily_index] = (uint8_t)(100 * (value.toFloat()));
+    //else
+    //if (currentKey == "precipType") daily->precipType[daily_index] = iconIndex(val);
+    //else
+    //if (currentKey == "precipAccumulation") daily->precipAccumulation[daily_index] = value.toFloat();
     else
     if (currentKey == "temperatureHigh") daily->temperatureHigh[daily_index] = value.toFloat();
     else
     if (currentKey == "temperatureLow") daily->temperatureLow[daily_index] = value.toFloat();
-    else
-    if (currentKey == "humidity") daily->humidity[daily_index] = (uint8_t)(100 * (value.toFloat()));
-    else
-    if (currentKey == "pressure") daily->pressure[daily_index] = value.toFloat();
-    else
-    if (currentKey == "windSpeed") daily->windSpeed[daily_index] = value.toFloat();
-    else
-    if (currentKey == "windGust") daily->windGust[daily_index] = value.toFloat();
-    else
-    if (currentKey == "windBearing") daily->windBearing[daily_index] = (uint16_t)value.toInt();
-    else
-    if (currentKey == "cloudCover") daily->cloudCover[daily_index] = (uint8_t)(100 * (value.toFloat()));
+    //else
+    //if (currentKey == "humidity") daily->humidity[daily_index] = (uint8_t)(100 * (value.toFloat()));
+    //else
+    //if (currentKey == "pressure") daily->pressure[daily_index] = value.toFloat();
+    //else
+    //if (currentKey == "windSpeed") daily->windSpeed[daily_index] = value.toFloat();
+    //else
+    //if (currentKey == "windGust") daily->windGust[daily_index] = value.toFloat();
+    //else
+    //if (currentKey == "windBearing") daily->windBearing[daily_index] = (uint16_t)value.toInt();
+    //else
+    //if (currentKey == "cloudCover") daily->cloudCover[daily_index] = (uint8_t)(100 * (value.toFloat()));
     //else
     //if (currentKey == "x") daily->x[daily_index] = value;
     //return;
   }
 
+}
+
+/***************************************************************************************
+** Function name:           iconIndex
+** Description:             Convert the icon name to an array index to save memory
+***************************************************************************************/
+uint8_t DS_Weather::iconIndex(const char *val)
+{
+  uint8_t i = 0;
+  for( i = 0; i <= MAX_ICON_INDEX; i++)
+  {
+    if (strcmp(iconText[i], val) == 0) break;
+  }
+  if ( i > MAX_ICON_INDEX) i = 0;
+  return i;
 }
