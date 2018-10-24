@@ -63,7 +63,7 @@
 TFT_eSPI tft = TFT_eSPI();             // Invoke custom library
 //TFT_eSprite spr = TFT_eSprite(&tft); // Sprites not used
 
-DSWforecast dsw;      // Weather forcast library instance
+DS_Weather dsw;      // Weather forcast library instance
 
 DSW_current *current; // Pointers to structs that holds weather data
 DSW_hourly  *hourly;
@@ -85,6 +85,7 @@ void drawCurrentWeather();
 void drawForecast();
 void drawForecastDetail(uint16_t x, uint16_t y, uint8_t dayIndex);
 String getMeteoconIcon(String iconText);
+const char* getMeteoconIcon(uint8_t iconIndex);
 void drawAstronomy();
 void drawSeparator(uint16_t y);
 
@@ -101,6 +102,9 @@ void setup() {
   SPIFFS.begin();
   listFiles();
 
+  //Uncomment if you want to erase SPIFFS and update all internet resources, this takes some time!
+  //tft.drawString("Formatting SPIFFS, so wait!", 120, 200); SPIFFS.format();
+
   if (SPIFFS.exists("/splash/DarkSky.jpg")   == true) ui.drawJpeg("/splash/DarkSky.jpg",   0, 0);
 
   delay(2000);
@@ -108,7 +112,7 @@ void setup() {
   tft.fillRect(0, 206, 240, 320 - 206, TFT_BLACK);
 
   tft.loadFont(AA_FONT_SMALL);
-
+  //tft.setFreeFont(&ArialRoundedMTBold_14);
   tft.setTextDatum(BC_DATUM);
   tft.setTextColor(TFT_LIGHTGREY, TFT_BLACK);
 
@@ -271,8 +275,7 @@ void drawProgress(uint8_t percentage, String text) {
 void drawTime() {
   tft.loadFont(AA_FONT_LARGE);
 
-  // Convert UTC to local time, returns zone abbreviation in tz1_Code e.g "GMT"
-  time_t local_time = TIMEZONE.toLocal(now(), &tz1_Code);
+  time_t local_time = TIMEZONE.toLocal(now(), &tz1_Code);  // Convert UTC to local time, returns zone code e.g "GMT"
 
   String timeNow = "";
 
@@ -310,11 +313,13 @@ void drawCurrentWeather() {
   String currentSummary = current->summary;
   currentSummary.toLowerCase();
 
-  if (currentSummary.indexOf("light rain") >= 0 && (current->icon == "rain")) weatherIcon = "lightRain";
-  else if (currentSummary.indexOf("drizzle") >= 0 && (current->icon == "rain")) weatherIcon = "drizzle";
+  if (currentSummary.indexOf("light rain") >= 0 && (current->icon == ICON_RAIN)) weatherIcon = "lightRain";
+  else if (currentSummary.indexOf("drizzle") >= 0 && (current->icon == ICON_RAIN)) weatherIcon = "drizzle";
   else weatherIcon = getMeteoconIcon(current->icon);
 
-  ui.drawBmp("/icon100/" + weatherIcon + ".bmp", 0, 53);
+  //uint32_t dt = millis();
+  ui.drawBmp("/icon/" + weatherIcon + ".bmp", 0, 53);
+  //Serial.print("Icon draw time = "); Serial.println(millis()-dt);
 
   // Weather Text
   String weatherText = current->summary;
@@ -369,6 +374,12 @@ void drawCurrentWeather() {
   String wind[] = {"N", "NE", "E", "SE", "S", "SW", "W", "NW" };
   ui.drawBmp("/wind/" + wind[windAngle] + ".bmp", 101, 86);
 
+/*
+  tft.fillCircle(126, 110, 24, TFT_BLACK); // Erase old plot, radius + 2 to delete stray pixels
+  tft.drawCircle(126, 110, 22, TFT_DARKGREY);    // Outer ring - optional
+  if ( windAngle >= 0 ) fillSegment(126, 110, windAngle - 15, 30, 22, TFT_GREEN);
+  tft.drawCircle(126, 110, 6, TFT_RED);
+*/
   drawSeparator(153);
 
   tft.setTextDatum(TL_DATUM); // Reset datum to normal
@@ -381,11 +392,11 @@ void drawCurrentWeather() {
 // draws the three forecast columns
 void drawForecast() {
   int8_t dayIndex = 0;
-  while ((daily->time[dayIndex] < current->time) && (dayIndex < (MAX_DAYS - 4))) dayIndex++;
-  drawForecastDetail(  8, 171, dayIndex);
-  drawForecastDetail( 66, 171, dayIndex + 1); // was 95
-  drawForecastDetail(124, 171, dayIndex + 2); // was 180
-  drawForecastDetail(182, 171, dayIndex + 3); // was 180
+  while ((daily->time[dayIndex] < (current->time - 12*60*60UL)) && (dayIndex < (MAX_DAYS - 4))) dayIndex++;
+  drawForecastDetail(  8, 171, dayIndex++);
+  drawForecastDetail( 66, 171, dayIndex++); // was 95
+  drawForecastDetail(124, 171, dayIndex++); // was 180
+  drawForecastDetail(182, 171, dayIndex  ); // was 180
   drawSeparator(171 + 69);
 }
 
@@ -394,6 +405,9 @@ void drawForecast() {
 ***************************************************************************************/
 // helper for the forecast columns
 void drawForecastDetail(uint16_t x, uint16_t y, uint8_t dayIndex) {
+
+  if (dayIndex >= MAX_DAYS) return;
+
   String day  = dayShortStr(weekday(TIMEZONE.toLocal(daily->time[dayIndex], &tz1_Code)));
   day.toUpperCase();
 
@@ -496,7 +510,7 @@ void drawAstronomy() {
 ***************************************************************************************/
 String getMeteoconIcon(String iconText) {
   if (iconText == "clear-day") return "clear";
-  if (iconText == "clear-night") return "clearNight";
+  if (iconText == "clear-night") return "clearNight"; // Need a moon
   if (iconText == "cloudy") return "cloudy";
   if (iconText == "fog") return "fog";
   if (iconText == "partly-cloudy-day") return "partlyCloudy";
@@ -507,6 +521,15 @@ String getMeteoconIcon(String iconText) {
   if (iconText == "wind") return "wind";
 
   return "unknown";
+}
+
+/***************************************************************************************
+**                          Draw screen section separator line
+***************************************************************************************/
+const char* getMeteoconIcon(uint8_t iconIndex)
+{
+  if (iconIndex > MAX_ICON_INDEX) iconIndex = 0;
+  return dsw.iconText[iconIndex];
 }
 
 /***************************************************************************************
@@ -534,7 +557,7 @@ int splitIndex(String text)
 /***************************************************************************************
 **                          Right side offset to a character
 ***************************************************************************************/
-// Calculate coord delta from start of sub String contained within that text to end of String
+// Calculate coord delta from start of text String to start of sub String contained within that text
 // Can be used to vertically right align text so for example a colon ":" in the time value is always
 // plotted at same point on the screen irrespective of different proportional character widths,
 // could also be used to align decimal points for neat formatting
