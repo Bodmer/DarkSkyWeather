@@ -22,11 +22,6 @@
 
 #include "DarkSkyWeather.h"
 
-//#define SHOW_HEADER // For checking response only
-//#define SHOW_JSON   // Debug only - simple formatting of whole JSON message
-
-//#define AXTLS       // For ESP8266: use older axTLS instead of BearSSL
-//#define SECURE_SSL  // For ESP8266: use SHA1 fingerprint with BearSSL
 
 /***************************************************************************************
 ** Function name:           getForecast
@@ -46,6 +41,10 @@ bool DS_Weather::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily
   this->current = current;
   this->hourly  = hourly;
   this->daily   = daily;
+
+#if defined (MINIMISE_DATA_POINTS) // If defined in DarSkyWeather library "User_Setup.h"
+   hourly = nullptr;
+#endif
 
   // Exclude some info by passing fn a NULL pointer to reduce memory needed
   String exclude = "";
@@ -354,9 +353,28 @@ void DS_Weather::error( const char *message ) {
 }
 
 /***************************************************************************************
-** Function name:           updateForecast
+** Function name:           iconIndex
+** Description:             Convert the icon name to an array index to save memory
+***************************************************************************************/
+uint8_t DS_Weather::iconIndex(const char *val)
+{
+  uint8_t i = 0;
+  for( i = 0; i <= MAX_ICON_INDEX; i++)
+  {
+    if (strcmp(iconText[i], val) == 0) break;
+  }
+  if ( i > MAX_ICON_INDEX) i = 0;
+  return i;
+}
+
+
+/***************************************************************************************
+** Function name:           updateForecast (full data set)
 ** Description:             Stores the parsed data in the structures for sketch access
 ***************************************************************************************/
+
+#ifndef MINIMISE_DATA_POINTS   // Collecct full data point set if this is NOT defined
+
 void DS_Weather::value(const char *val) {
 
    String value = val;
@@ -374,12 +392,12 @@ void DS_Weather::value(const char *val) {
     if (currentKey == "summary") current->summary = value;
     else
     if (currentKey == "icon") current->icon = iconIndex(val);
-    //else
-    //if (currentKey == "precipIntensity") current->precipIntensity = value.toFloat();
-    //else
-    //if (currentKey == "precipType") current->precipType = iconIndex(val);
-    //else
-    //if (currentKey == "precipProbability") current->precipProbability = (uint8_t)(100 * (value.toFloat()));
+    else
+    if (currentKey == "precipIntensity") current->precipIntensity = value.toFloat();
+    else
+    if (currentKey == "precipType") current->precipType = iconIndex(val);
+    else
+    if (currentKey == "precipProbability") current->precipProbability = (uint8_t)(100 * (value.toFloat()));
     else
     if (currentKey == "temperature") current->temperature = value.toFloat();
     else
@@ -388,8 +406,8 @@ void DS_Weather::value(const char *val) {
     if (currentKey == "pressure") current->pressure = value.toFloat();
     else
     if (currentKey == "windSpeed") current->windSpeed = value.toFloat();
-    //else
-    //if (currentKey == "windGust") current->windGust = value.toFloat();
+    else
+    if (currentKey == "windGust") current->windGust = value.toFloat();
     else
     if (currentKey == "windBearing") current->windBearing = (uint16_t)value.toInt();
     else
@@ -477,6 +495,167 @@ void DS_Weather::value(const char *val) {
     if (currentKey == "sunsetTime") daily->sunsetTime[daily_index] = (uint32_t)value.toInt();
     else
     if (currentKey == "moonPhase") daily->moonPhase[daily_index] = (uint8_t)(100 * (value.toFloat()));
+    else
+    if (currentKey == "precipIntensity") daily->precipIntensity[daily_index] = value.toFloat();
+    else
+    if (currentKey == "precipProbability") daily->precipProbability[daily_index] = (uint8_t)(100 * (value.toFloat()));
+    else
+    if (currentKey == "precipType") daily->precipType[daily_index] = iconIndex(val);
+    else
+    if (currentKey == "precipAccumulation") daily->precipAccumulation[daily_index] = value.toFloat();
+    else
+    if (currentKey == "temperatureHigh") daily->temperatureHigh[daily_index] = value.toFloat();
+    else
+    if (currentKey == "temperatureLow") daily->temperatureLow[daily_index] = value.toFloat();
+    else
+    if (currentKey == "humidity") daily->humidity[daily_index] = (uint8_t)(100 * (value.toFloat()));
+    else
+    if (currentKey == "pressure") daily->pressure[daily_index] = value.toFloat();
+    else
+    if (currentKey == "windSpeed") daily->windSpeed[daily_index] = value.toFloat();
+    else
+    if (currentKey == "windGust") daily->windGust[daily_index] = value.toFloat();
+    else
+    if (currentKey == "windBearing") daily->windBearing[daily_index] = (uint16_t)value.toInt();
+    else
+    if (currentKey == "cloudCover") daily->cloudCover[daily_index] = (uint8_t)(100 * (value.toFloat()));
+    //else
+    //if (currentKey == "x") daily->x[daily_index] = value;
+    //return;
+  }
+
+}
+
+
+#else  // MINIMISE_DATA_POINTS defined in User_~Setup.h, so collect minimal set of
+       // data points for TFT_eSPI examples and thereby reduce memory requirements
+
+/***************************************************************************************
+** Function name:           updateForecast (partial data set)
+** Description:             Stores the parsed data in the structures for sketch access
+***************************************************************************************/
+void DS_Weather::value(const char *val) {
+
+   String value = val;
+
+  // Start of JSON
+  //if (currentParent == "") {
+  //  if (currentKey == "timezone") current->timezone = value;
+  //}
+
+  // Current forecast - no array index
+  if (currentParent == "currently") {
+    data_set = "currently";
+    if (currentKey == "time") current->time = (uint32_t)value.toInt();
+    else
+    if (currentKey == "summary") current->summary = value;
+    else
+    if (currentKey == "icon") current->icon = iconIndex(val);
+    //else
+    //if (currentKey == "precipIntensity") current->precipIntensity = value.toFloat();
+    //else
+    //if (currentKey == "precipType") current->precipType = iconIndex(val);
+    //else
+    //if (currentKey == "precipProbability") current->precipProbability = (uint8_t)(100 * (value.toFloat()));
+    else
+    if (currentKey == "temperature") current->temperature = value.toFloat();
+    else
+    if (currentKey == "humidity") current->humidity = (uint8_t)(100 * (value.toFloat()));
+    else
+    if (currentKey == "pressure") current->pressure = value.toFloat();
+    else
+    if (currentKey == "windSpeed") current->windSpeed = value.toFloat();
+    //else
+    //if (currentKey == "windGust") current->windGust = value.toFloat();
+    else
+    if (currentKey == "windBearing") current->windBearing = (uint16_t)value.toInt();
+    else
+    if (currentKey == "cloudCover") current->cloudCover = (uint8_t)(100 * (value.toFloat()));
+    //else
+    //if (currentKey == "x") current->x = value;
+    return;
+  }
+
+#if !defined (MINIMISE_DATA_POINTS)
+  // Hourly data collection
+  if (currentParent == "hourly") {
+    data_set = currentParent; // Save parent to trigger the hourly array
+    hourly->time[0] = 0;
+    if (currentKey == "summary") hourly->overallSummary = value;
+    //else
+    //if (currentKey == "x") hourly->x = value;
+    return;
+  }
+#endif
+
+  // Daily data collection
+  if (currentParent == "daily") {
+    data_set = currentParent; // Save parent to trigger the daily array
+    daily->time[0] = 0;
+    if (currentKey == "summary") daily->overallSummary = value;
+    //else
+    //if (currentKey == "x") daily->x = value;
+    return;
+  }
+
+  // Collect array data after "data_set" has been set by parent
+#if !defined (MINIMISE_DATA_POINTS)
+  // Hourly data[N] array
+  if (data_set == "hourly") {
+    if (hourly_index >= MAX_HOURS) return;
+    if (currentKey == "time") {
+      // Only increment after the first entry
+      if (hourly->time[0] > 0)
+      {
+        hourly_index++;
+        if (hourly_index >= MAX_HOURS) return;
+      }
+      hourly->time[hourly_index] = (uint32_t)value.toInt();
+    }
+    else
+    if (currentKey == "summary") hourly->summary[hourly_index] = value;
+    else
+    if (currentKey == "precipIntensity") hourly->precipIntensity[hourly_index] = value.toFloat();
+    else
+    if (currentKey == "precipType") hourly->precipType[hourly_index] = iconIndex(val);
+    else
+    if (currentKey == "precipProbability") hourly->precipProbability[hourly_index] = (uint8_t)(100 * (value.toFloat()));
+    else
+    if (currentKey == "precipAccumulation") hourly->precipAccumulation[hourly_index] = value.toFloat();
+    else
+    if (currentKey == "temperature") hourly->temperature[hourly_index] = value.toFloat();
+    else
+    if (currentKey == "pressure") hourly->pressure[hourly_index] = value.toFloat();
+    else
+    if (currentKey == "cloudCover") hourly->cloudCover[hourly_index] = (uint8_t)(100 * (value.toFloat()));
+    //else
+    //if (currentKey == "x") hourly->x[hourly_index] = value;
+    return;
+  }
+#endif
+
+  // Daily data[N] array
+  if (data_set == "daily") {
+    if (daily_index >= MAX_DAYS) return;
+    if (currentKey == "time") {
+      // Only increment after the first entry
+      if (daily->time[0] > 0)
+      {
+        daily_index++;
+        if (daily_index >= MAX_DAYS) return;
+      }
+      daily->time[daily_index] = (uint32_t)value.toInt();
+    }
+    else
+    if (currentKey == "summary") daily->summary[daily_index] = value;
+    else
+    if (currentKey == "icon") daily->icon[daily_index] = iconIndex(val);
+    else
+    if (currentKey == "sunriseTime") daily->sunriseTime[daily_index] = (uint32_t)value.toInt();
+    else
+    if (currentKey == "sunsetTime") daily->sunsetTime[daily_index] = (uint32_t)value.toInt();
+    else
+    if (currentKey == "moonPhase") daily->moonPhase[daily_index] = (uint8_t)(100 * (value.toFloat()));
     //else
     //if (currentKey == "precipIntensity") daily->precipIntensity[daily_index] = value.toFloat();
     //else
@@ -507,18 +686,5 @@ void DS_Weather::value(const char *val) {
   }
 
 }
-
-/***************************************************************************************
-** Function name:           iconIndex
-** Description:             Convert the icon name to an array index to save memory
-***************************************************************************************/
-uint8_t DS_Weather::iconIndex(const char *val)
-{
-  uint8_t i = 0;
-  for( i = 0; i <= MAX_ICON_INDEX; i++)
-  {
-    if (strcmp(iconText[i], val) == 0) break;
-  }
-  if ( i > MAX_ICON_INDEX) i = 0;
-  return i;
-}
+  
+#endif // MINIMISE_DATA_POINTS
