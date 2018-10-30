@@ -15,7 +15,12 @@
 #include <Timezone.h>
 
 // Libraries built into IDE
-#include <WiFi.h>
+#ifdef ESP8266
+  #include <ESP8266WiFi.h>
+#else
+  #include <WiFi.h>
+#endif
+
 #include <WiFiUdp.h>
 
 // A UDP instance to let us send and receive packets over UDP
@@ -25,17 +30,27 @@ WiFiUDP udp;
 //                                  Settings
 //====================================================================================
 
+#ifdef ESP32 // Temporary fix, ESP8266 fails to communicate with some servers...
 // Try to use pool url instead so the server IP address is looked up from those available
 // (use a pool server in your own country to improve response time and reliability)
 //const char* ntpServerName = "time.nist.gov";
-const char* ntpServerName = "pool.ntp.org";
+//const char* ntpServerName = "pool.ntp.org";
+const char* ntpServerName = "time.google.com";
+#else
+// Try to use pool url instead so the server IP address is looked up from those available
+// (use a pool server in your own country to improve response time and reliability)
+// const char* ntpServerName = "time.nist.gov";
+// char* ntpServerName = "pool.ntp.org";
+const char* ntpServerName = "time.google.com";
+#endif
 
 // Try not to use hard-coded IP addresses which might change, you can if you want though...
-//IPAddress timeServerIP(129, 6, 15, 30); // time-c.nist.gov NTP server
+//IPAddress timeServerIP(129, 6, 15, 30);   // time-c.nist.gov NTP server
 //IPAddress timeServerIP(24, 56, 178, 140); // wwv.nist.gov NTP server
+IPAddress timeServerIP;                     // Use server pool
 
 // Example time zone and DST rules, see Timezone library documents to see how
-// to add more time zones https://github.com/PaulStoffregen/Time
+// to add more time zones https://github.com/JChristensen/Timezone
 
 // Zone reference "UK" United Kingdom (London, Belfast)
 TimeChangeRule BST = {"BST", Last, Sun, Mar, 1, 60};        //British Summer (Daylight saving) Time
@@ -75,7 +90,6 @@ TimeChangeRule usPDT = {"PDT", Second, dowSunday, Mar, 2, -420};
 TimeChangeRule usPST = {"PST", First, dowSunday, Nov, 2, -480};
 Timezone usPT(usPDT, usPST);
 
-IPAddress timeServerIP; // Use server pool
 
 //====================================================================================
 //                                  Variables

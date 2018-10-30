@@ -15,10 +15,14 @@
 #include <WiFiClientSecure.h>
 
 // The streaming parser to use is not the Arduino IDE library manager default,
-// but this one:
+// but this one which is slightly different and renamed to avoid conflicts:
 // https://github.com/Bodmer/json-streaming-parser
-#include <JsonListener.h>
-#include <JsonStreamingParser.h>
+//
+// It is this fork: https://github.com/altrunner/json-streaming-parser
+// of this library: https://github.com/squix78/json-streaming-parser
+
+#include <JSON_Listener.h>
+#include <JSON_Decoder.h>
 
 #include "DarkSkyWeather.h"
 
@@ -106,7 +110,7 @@ bool DS_Weather::parseRequest(String url) {
 
   client.setCACert(dsw_ca_cert);
 
-  JsonStreamingParser parser;
+  JSON_Decoder parser;
   parser.setListener(this);
 
   const char*  host = "api.darksky.net";
@@ -121,6 +125,7 @@ bool DS_Weather::parseRequest(String url) {
   char c = 0;
   int ccount = 0;
   uint32_t readCount = 0;
+  parseOK = false;
 
   // Send GET request
   Serial.println("\nSending GET request to api.darksky.net...");
@@ -183,7 +188,7 @@ bool DS_Weather::parseRequest(String url) {
   client.stop();
   
   // A message has been parsed but the datapoint correctness is unknown
-  return true;
+  return parseOK;
 }
 
 #else // ESP8266 version
@@ -213,7 +218,7 @@ bool DS_Weather::parseRequest(String url) {
     #endif
   #endif
 
-  JsonStreamingParser parser;
+  JSON_Decoder parser;
   parser.setListener(this);
 
   const char*  host = "api.darksky.net";
@@ -242,6 +247,7 @@ bool DS_Weather::parseRequest(String url) {
   char c = 0;
   int ccount = 0;
   uint32_t readCount = 0;
+  parseOK = false;
 
   // Send GET request
   Serial.println("Sending GET request to api.darksky.net...");
@@ -302,8 +308,8 @@ bool DS_Weather::parseRequest(String url) {
 
   client.stop();
   
-  // A message has been parsed but the datapoint correctness is unknown
-  return true;
+  // A message has been parsed without error but the datapoint correctness is unknown
+  return parseOK;
 }
 
 #endif // ESP32 or ESP8266 parseRequest
@@ -313,35 +319,77 @@ bool DS_Weather::parseRequest(String url) {
 ** Description:             These functions are called while parsing the JSON message
 ***************************************************************************************/
 void DS_Weather::key(const char *key) {
-  //Serial.print(">>> Key >>>" + key);
+
   currentKey = key;
+
+#ifdef SHOW_CALLBACK
+  Serial.print("\n>>> Key >>>" + (String)key);
+#endif
 }
 
 void DS_Weather::startDocument() {
-  //Serial.print(">>> Start document >>>");
+
   currentParent = currentKey = "";
+  objectLevel = 0;
+  valuePath = "";
+  arrayIndex = 0;
+  parseOK = true;
+
+#ifdef SHOW_CALLBACK
+  Serial.print("\n>>> Start document >>>");
+#endif
 }
 
 void DS_Weather::endDocument() {
-  //Serial.print("<<< End document <<<");
+
+  currentParent = currentKey = "";
+  objectLevel = 0;
+  valuePath = "";
+  arrayIndex = 0;
+
+#ifdef SHOW_CALLBACK
+  Serial.print("\n<<< End document <<<");
+#endif
 }
 
 void DS_Weather::startObject() {
-  //Serial.print(">>> Start object >>>");
+
   currentParent = currentKey;
+  objectLevel++;
+
+#ifdef SHOW_CALLBACK
+  Serial.print("\n>>> Start object level:" + (String) objectLevel + " index:" + (String) arrayIndex +" >>>");
+#endif
 }
 
 void DS_Weather::endObject() {
-  //Serial.print("<<< End object <<<");
+
   currentParent = "";
+  arrayIndex++;
+  objectLevel--;
+
+#ifdef SHOW_CALLBACK
+  Serial.print("\n<<< End object <<<");
+#endif
 }
 
 void DS_Weather::startArray() {
-  //Serial.print(">>> Start array >>>");
+
+  arrayIndex  = 0;
+  valuePath = currentParent + "/" + currentKey; // aka = current Object, e.g. "daily:data"
+
+#ifdef SHOW_CALLBACK
+  Serial.print("\n>>> Start array " + valuePath + "/" + (String) arrayIndex +" >>>");
+#endif
 }
 
 void DS_Weather::endArray() {
-  //Serial.print("<<< End array <<<");
+
+  valuePath = "";
+
+#ifdef SHOW_CALLBACK
+  Serial.print("\n<<< End array <<<");
+#endif
 }
 
 void DS_Weather::whitespace(char c) {
@@ -350,6 +398,7 @@ void DS_Weather::whitespace(char c) {
 void DS_Weather::error( const char *message ) {
   Serial.print("\nParse error message: ");
   Serial.print(message);
+  parseOK = false;
 }
 
 /***************************************************************************************
@@ -358,22 +407,33 @@ void DS_Weather::error( const char *message ) {
 ***************************************************************************************/
 uint8_t DS_Weather::iconIndex(const char *val)
 {
+  if (*val == 0) return MAX_ICON_INDEX; // null so return index for none
+
   uint8_t i = 0;
   for( i = 0; i <= MAX_ICON_INDEX; i++)
   {
-    if (strcmp(iconText[i], val) == 0) break;
+    if (strcmp(iconList[i], val) == 0) break;
   }
-  if ( i > MAX_ICON_INDEX) i = 0;
+  if ( i >= MAX_ICON_INDEX) i = 0;
   return i;
 }
 
+/***************************************************************************************
+** Function name:           iconFilename
+** Description:             Convert the icon array index to an icon filename
+***************************************************************************************/
+const char* DS_Weather::iconName(uint8_t index)
+{
+  return iconList[index];
+}
 
 /***************************************************************************************
 ** Function name:           updateForecast (full data set)
 ** Description:             Stores the parsed data in the structures for sketch access
 ***************************************************************************************/
-
-#ifndef MINIMISE_DATA_POINTS   // Collecct full data point set if this is NOT defined
+ // Nested "if" with "return" reduces comparison count for each key
+ 
+#ifndef MINIMISE_DATA_POINTS   // Collect full data point set if this is NOT defined <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 void DS_Weather::value(const char *val) {
 
@@ -384,7 +444,7 @@ void DS_Weather::value(const char *val) {
   //  if (currentKey == "timezone") current->timezone = value;
   //}
 
-  // Current forecast - no array index
+  // Current forecast - no array index - short path
   if (currentParent == "currently") {
     data_set = "currently";
     if (currentKey == "time") current->time = (uint32_t)value.toInt();
@@ -419,7 +479,7 @@ void DS_Weather::value(const char *val) {
 
   // Hourly data collection
   if (currentParent == "hourly") {
-    data_set = currentParent; // Save parent to trigger the hourly array
+    data_set = currentParent; // Save parent object to trigger the hourly array
     hourly->time[0] = 0;
     if (currentKey == "summary") hourly->overallSummary = value;
     //else
@@ -527,8 +587,8 @@ void DS_Weather::value(const char *val) {
 }
 
 
-#else  // MINIMISE_DATA_POINTS defined in User_~Setup.h, so collect minimal set of
-       // data points for TFT_eSPI examples and thereby reduce memory requirements
+#else  // MINIMISE_DATA_POINTS: Collect full data point set if this IS defined <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+       // data points reduced for TFT_eSPI example to reduce memory requirements
 
 /***************************************************************************************
 ** Function name:           updateForecast (partial data set)

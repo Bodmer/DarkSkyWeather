@@ -38,15 +38,21 @@
 #include <SPI.h>
 #include <TFT_eSPI.h> // https://github.com/Bodmer/TFT_eSPI
 
-// Additional UI functions
-#include "GfxUi.h" // Attached to this sketch
+// Additional functions
+#include "GfxUi.h"          // Attached to this sketch
+#include "SPIFFS_Support.h" // Attached to this sketch
 
-#include <WiFi.h> // Stock IDE library
+#ifdef ESP8266
+  #include <ESP8266WiFi.h>
+#else
+  #include <WiFi.h>
+#endif
+
 
 // check settings.h for adapting to your needs
 #include "All_Settings.h"
 
-#include <JsonStreamingParser.h> // https://github.com/Bodmer/json-streaming-parser
+#include <JSON_Decoder.h> // https://github.com/Bodmer/json-streaming-parser
 
 #include <DarkSkyWeather.h>
 
@@ -83,7 +89,13 @@ void drawForecastDetail(uint16_t x, uint16_t y, uint8_t dayIndex);
 const char* getMeteoconIcon(uint8_t iconIndex);
 void drawAstronomy();
 void drawSeparator(uint16_t y);
-
+void fillSegment(int x, int y, int start_angle, int sub_angle, int r, unsigned int colour);
+String strDate(time_t unixTime);
+String strTime(time_t unixTime);
+void printWeather(void);
+int leftOffset(String text, String sub);
+int rightOffset(String text, String sub);
+int splitIndex(String text);
 
 /***************************************************************************************
 **                          Setup
@@ -513,8 +525,8 @@ void drawAstronomy() {
 ***************************************************************************************/
 const char* getMeteoconIcon(uint8_t iconIndex)
 {
-  if (iconIndex > MAX_ICON_INDEX) iconIndex = 0;
-  return dsw.iconText[iconIndex];
+  if (iconIndex > MAX_ICON_INDEX) iconIndex = 0; // 0 = unknown
+  return dsw.iconName(iconIndex);
 }
 
 /***************************************************************************************

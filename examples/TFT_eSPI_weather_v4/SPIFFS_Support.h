@@ -3,6 +3,7 @@
 
   Created by Bodmer 15th Jan 2017
   ==================================================================================*/
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels);
 
 // -------------------------------------------------------------------------
 // List SPIFFS files in a neat format for ESP8266 or ESP32

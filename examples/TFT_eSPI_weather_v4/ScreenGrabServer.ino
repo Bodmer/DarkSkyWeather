@@ -44,6 +44,11 @@
 // NPIXELS values and render times: 1 = 5.0s, 2 = 1.75s, 4 = 1.68s, 8 = 1.67s
 #define NPIXELS 8  // Must be integer division of both TFT width and TFT height
 
+boolean screenServer(void);
+boolean screenServer(String filename);
+boolean serialScreenServer(String filename);
+void sendParameters(String filename);
+
 //====================================================================================
 //                           Screen server call with no filename
 //====================================================================================
