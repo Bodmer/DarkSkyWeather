@@ -4,6 +4,9 @@ Arduino client library for https://darksky.net/dev
 
 Collects current weather plus daily forecasts.
 
+Requires the JSON parse library here:
+https://github.com/Bodmer/JSON_Decoder
+
 The DarkSkyWeather_Test example sketch sends collected data to the Serial port for API test. It does not not require a TFT screen.
 
 The TFT_eSPI_Weather (for ESP8266) and ESP32_TFT_eSPI_Weather examples display the weather data on a TFT screen.  These examples use anti-aliased fonts and newly created icons:
