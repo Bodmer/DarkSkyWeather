@@ -16,10 +16,8 @@
 
 // The streaming parser to use is not the Arduino IDE library manager default,
 // but this one which is slightly different and renamed to avoid conflicts:
-// https://github.com/Bodmer/json-streaming-parser
-//
-// It is this fork: https://github.com/altrunner/json-streaming-parser
-// of this library: https://github.com/squix78/json-streaming-parser
+// https://github.com/Bodmer/JSON_Decoder
+
 
 #include <JSON_Listener.h>
 #include <JSON_Decoder.h>
