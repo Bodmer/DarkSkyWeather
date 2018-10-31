@@ -68,7 +68,7 @@ TFT_eSPI tft = TFT_eSPI();             // Invoke custom library
 DS_Weather dsw;      // Weather forcast library instance
 
 DSW_current *current; // Pointers to structs that temporarily holds weather data
-DSW_hourly  *hourly;
+DSW_hourly  *hourly;  // Not used
 DSW_daily   *daily;
 
 boolean booted = true;
@@ -112,7 +112,8 @@ void setup() {
   // Enable if you want to erase SPIFFS, this takes some time!
   // then disable and reload sketch to avoid reformatting on every boot!
   #ifdef FORMAT_SPIFFS
-    tft.drawString("Formatting SPIFFS, so wait!", 120, 200); SPIFFS.format();
+    tft.setTextDatum(BC_DATUM); // Bottom Centre datum
+    tft.drawString("Formatting SPIFFS, so wait!", 120, 195); SPIFFS.format();
   #endif
 
   // Draw splash screen for Dark Sky T&C compliance
@@ -156,6 +157,7 @@ void setup() {
   //delay(500);
 
   // Fetch the time
+  udp.begin(localPort);
   syncTime();
 
   tft.unloadFont();
@@ -211,8 +213,8 @@ void updateData() {
   current = new DSW_current;
   daily =   new DSW_daily;
 
-  // hourly not used by this sketch, set to NULL
-  hourly =  NULL; //new DSW_hourly;
+  // hourly not used by this sketch, set to nullptr
+  hourly =  nullptr; //new DSW_hourly;
 
 #ifdef RANDOM_LOCATION // Randomly choose a place on Earth to test icons etc
   String latitude = "";

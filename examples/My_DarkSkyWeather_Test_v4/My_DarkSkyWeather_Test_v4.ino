@@ -28,8 +28,8 @@
 #define TIME_OFFSET 0UL * 3600UL // UTC + 0 hour
 
 // Change to suit your WiFi router
-#define SSID "SSID"
-#define SSID_PASSWORD "password"
+#define SSID "Your_SSID"
+#define SSID_PASSWORD "Your_password"
 
 // Dark Sky API Details, replace x's with your API key
 String api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // Obtain this from your Dark Sky account

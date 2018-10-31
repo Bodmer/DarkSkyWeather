@@ -30,7 +30,7 @@
 ** Description:             Setup the weather forecast request from darksky.net
 ***************************************************************************************/
 // The structures etc are created by the sketch and passed to this function.
-// Pass a NULL for current, hourly or daily pointers to exclude in response.
+// Pass a nullptr for current, hourly or daily pointers to exclude in response.
 bool DS_Weather::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily *daily,
                              String api_key, String latitude, String longitude,
                              String units, String language) {
@@ -426,7 +426,7 @@ const char* DS_Weather::iconName(uint8_t index)
 }
 
 /***************************************************************************************
-** Function name:           updateForecast (full data set)
+** Function name:           value (full data set)
 ** Description:             Stores the parsed data in the structures for sketch access
 ***************************************************************************************/
  // Nested "if" with "return" reduces comparison count for each key
@@ -589,7 +589,7 @@ void DS_Weather::value(const char *val) {
        // data points reduced for TFT_eSPI example to reduce memory requirements
 
 /***************************************************************************************
-** Function name:           updateForecast (partial data set)
+** Function name:           value (partial data set)
 ** Description:             Stores the parsed data in the structures for sketch access
 ***************************************************************************************/
 void DS_Weather::value(const char *val) {
