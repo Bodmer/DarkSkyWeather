@@ -52,7 +52,7 @@
 // check settings.h for adapting to your needs
 #include "All_Settings.h"
 
-#include <JSON_Decoder.h> // https://github.com/Bodmer/json-streaming-parser
+#include <JSON_Decoder.h> // https://github.com/Bodmer/JSON_Decoder
 
 #include <DarkSkyWeather.h>
 
