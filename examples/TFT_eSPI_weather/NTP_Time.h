@@ -40,8 +40,8 @@ const char* ntpServerName = "time.google.com";
 // Try to use pool url instead so the server IP address is looked up from those available
 // (use a pool server in your own country to improve response time and reliability)
 // const char* ntpServerName = "time.nist.gov";
-// char* ntpServerName = "pool.ntp.org";
-const char* ntpServerName = "time.google.com";
+const char* ntpServerName = "pool.ntp.org";
+//const char* ntpServerName = "time.google.com";
 #endif
 
 // Try not to use hard-coded IP addresses which might change, you can if you want though...

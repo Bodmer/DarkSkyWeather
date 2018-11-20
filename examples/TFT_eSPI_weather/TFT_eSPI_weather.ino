@@ -3,14 +3,17 @@
 
 //  This sketch is compatible with the ESP8266 and ESP32
 
-//  >>>  IMPORTANT  <<<
-//  Modify setup in All_Settings.h tab to configure your location etc
+//                           >>>  IMPORTANT  <<<
+//         Modify setup in All_Settings.h tab to configure your location etc
+
+//                >>>  EVEN MORE IMPORTANT TO PREVENT CRASHES <<<
+//>>>>>>  For ESP8266 set SPIFFS to at least 2Mbytes before uploading files  <<<<<<
 
 //  ESP8266/ESP32 pin connections to the TFT are defined in the TFT_eSPI library.
 
 //  Original by Daniel Eichhorn, see license at end of file.
 
-//#define SERIAL_MESSAGES // For serial output weather reports
+#define SERIAL_MESSAGES // For serial output weather reports
 //#define SCREEN_SERVER   // For dumping screentshots from TFT
 //#define RANDOM_LOCATION // Test only, selects random weather location every refresh
 //#define FORMAT_SPIFFS   // Wipe SPIFFS and all files!
@@ -25,8 +28,7 @@
 // of fonts has an extensive character set coverage.
 
 // Json streaming parser (do not use IDE library manager version) to use is here:
-// https://github.com/Bodmer/json-streaming-parser
-// Eventually I will rename so the two parsers can co-exist!
+// https://github.com/Bodmer/JSON_Decoder
 
 #define AA_FONT_SMALL "fonts/NotoSansBold15" // 15 point sans serif bold
 #define AA_FONT_LARGE "fonts/NotoSansBold36" // 36 point sans serif bold
@@ -52,9 +54,9 @@
 // check settings.h for adapting to your needs
 #include "All_Settings.h"
 
-#include <JSON_Decoder.h> // https://github.com/Bodmer/JSON_Decoder
+#include <JSON_Decoder.h>   // https://github.com/Bodmer/JSON_Decoder
 
-#include <DarkSkyWeather.h>
+#include <DarkSkyWeather.h> // Latest here: https://github.com/Bodmer/DarkSkyWeather
 
 #include "NTP_Time.h" // Attached to this sketch, see that tab for library needs
 

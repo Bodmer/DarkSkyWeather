@@ -3,8 +3,16 @@
 //  The weather icons and fonts are in the sketch data folder, press Ctrl+K
 //  to view.
 
+
+//                >>>       IMPORTANT TO PREVENT CRASHES      <<<
+//>>>>>>  For ESP8266 set SPIFFS to at least 2Mbytes before uploading files  <<<<<<
+
+
+//                >>>           DON'T FORGET THIS             <<<
 //  Upload the fonts and icons to SPIFFS using the "Tools"  "ESP32 Sketch Data Upload"
-//  menu option in the IDE.
+//  or "ESP8266 Sketch Data Upload" menu option in the IDE.
+//  To add this option follow instructions here for the ESP8266:
+//  https://github.com/esp8266/arduino-esp8266fs-plugin
 //  To add this option follow instructions here for the ESP32:
 //  https://github.com/me-no-dev/arduino-esp32fs-plugin
 

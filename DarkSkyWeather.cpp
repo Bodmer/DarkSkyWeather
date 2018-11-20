@@ -278,9 +278,9 @@ bool DS_Weather::parseRequest(String url) {
   Serial.println("Parsing JSON");
   
   // Parse the JSON data, available() includes yields
-  while ((readCount = client.available()) || client.connected())
+  while (client.available() || client.connected())
   {
-    while (readCount--)
+    while (client.available())
     {
       c = client.read();
       parser.parse(c);
