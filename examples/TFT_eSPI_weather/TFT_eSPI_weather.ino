@@ -410,8 +410,8 @@ void drawCurrentWeather() {
 ***************************************************************************************/
 // draws the three forecast columns
 void drawForecast() {
-  int8_t dayIndex = 0;
-  while ((daily->time[dayIndex] < (current->time - 12*60*60UL)) && (dayIndex < (MAX_DAYS - 4))) dayIndex++;
+  int8_t dayIndex = 1;
+  //while ((daily->time[dayIndex] < (current->time - 12*60*60UL)) && (dayIndex < (MAX_DAYS - 4))) dayIndex++;
   drawForecastDetail(  8, 171, dayIndex++);
   drawForecastDetail( 66, 171, dayIndex++); // was 95
   drawForecastDetail(124, 171, dayIndex++); // was 180
