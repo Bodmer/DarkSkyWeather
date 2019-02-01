@@ -82,6 +82,7 @@ bool DS_Weather::parseRequest(String url) {
 
   uint32_t dt = millis();
 
+  // This certificate will expire in June 2019, but we can ignore it at line 111
   const char* dsw_ca_cert = \
   "-----BEGIN CERTIFICATE-----\n" \
   "MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF\n" \
@@ -106,7 +107,8 @@ bool DS_Weather::parseRequest(String url) {
 
   WiFiClientSecure client;
 
-  client.setCACert(dsw_ca_cert);
+  
+  //client.setCACert(dsw_ca_cert);  // Comment out to stop certificate check
 
   JSON_Decoder parser;
   parser.setListener(this);

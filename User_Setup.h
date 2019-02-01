@@ -22,7 +22,7 @@
 // will be missing!  Unfortnately compile time options for a library cannot be set in
 // when using the Arduino IDE.
 
-#define AXTLS       // For ESP8266 only: use older axTLS secure client instead of BearSSL
+//#define AXTLS       // For ESP8266 only: use older axTLS secure client instead of BearSSL
 //#define SECURE_SSL  // For ESP8266 only: use SHA1 fingerprint with BearSSL
 
 
