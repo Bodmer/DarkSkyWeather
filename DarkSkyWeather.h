@@ -96,10 +96,11 @@ class DS_Weather: public JsonListener {
 
     // Lookup table to convert  an array index to a weather icon bmp filename e.g. rain.bmp
 
+// A partly-cloudy-night means a clear day as noted in issue #7
     const char* iconList[MAX_ICON_INDEX + 1] = {"unknown", "rain", "sleet", "snow", "clear-day",
     "clear-night", "partly-cloudy-day", "partly-cloudy-night", "cloudy", "fog",
     "wind", "none" };
- 
+
 };
 
 /***************************************************************************************
