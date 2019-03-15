@@ -427,7 +427,7 @@ void drawForecastDetail(uint16_t x, uint16_t y, uint8_t dayIndex) {
 
   if (dayIndex >= MAX_DAYS) return;
 
-  String day  = dayShortStr(weekday(TIMEZONE.toLocal(daily->time[dayIndex], &tz1_Code)));
+  String day  = shortDOW[weekday(TIMEZONE.toLocal(daily->time[dayIndex], &tz1_Code))];
   day.toUpperCase();
 
   tft.setTextDatum(BC_DATUM);
@@ -453,8 +453,6 @@ void drawForecastDetail(uint16_t x, uint16_t y, uint8_t dayIndex) {
 **                          Draw Sun rise/set, Moon, cloud cover and humidity
 ***************************************************************************************/
 void drawAstronomy() {
-  // Moon phase strings...
-  String moonPhase [8] = {"New", "Waxing", "1st qtr", "Waxing", "Full", "Waning", "Last qtr", "Waning"};
 
   tft.setTextDatum(BC_DATUM);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
@@ -497,7 +495,7 @@ void drawAstronomy() {
 
   tft.setTextDatum(BC_DATUM);
   tft.setTextColor(TFT_ORANGE, TFT_BLACK);
-  tft.drawString("Cloud", 195, 260);
+  tft.drawString(cloudStr, 195, 260);
 
   String cloudCover = "";
   cloudCover += current->cloudCover;
@@ -510,7 +508,7 @@ void drawAstronomy() {
 
   tft.setTextDatum(BC_DATUM);
   tft.setTextColor(TFT_ORANGE, TFT_BLACK);
-  tft.drawString("Humidity", 195, 300 - 2);
+  tft.drawString(humidityStr, 195, 300 - 2);
 
   String humidity = "";
   humidity += current->humidity;
