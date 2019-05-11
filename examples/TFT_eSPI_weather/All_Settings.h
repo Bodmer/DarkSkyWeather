@@ -19,7 +19,7 @@
 //  Close the IDE and open again to see the new menu option.
 
 //////////////////////////////
-// Setttings defined below
+// Settings defined below
 
 #define WIFI_SSID "Your_SSID"
 #define PASSWORD "Your_password"

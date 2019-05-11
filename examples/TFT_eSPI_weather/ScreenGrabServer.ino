@@ -27,7 +27,7 @@
 
 #define BITS_PER_PIXEL 16     // 24 for RGB colour format, 16 for 565 colour format
 
-// File names must be alpha-numeric characters (0-9, a-z, A-Z) or "/" underscore "_"
+// File names must be alphanumeric characters (0-9, a-z, A-Z) or "/" underscore "_"
 // other ascii characters are stripped out by client, including / generates
 // sub-directories
 #define DEFAULT_FILENAME "tft_screenshots/screenshot" // In case none is specified

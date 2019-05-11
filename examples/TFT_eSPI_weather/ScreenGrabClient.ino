@@ -155,7 +155,7 @@ void draw() {
 
   switch(state) {
 
-  case 0: // Init varaibles, send start request
+  case 0: // Init variables, send start request
     if (running) {
       tint(0, 0, 0, 255);
       flushBuffer();
@@ -218,7 +218,7 @@ void draw() {
     state = renderPixels(); // State will change when all pixels are rendered
 
     // Request more pixels, changing the number requested allows the average transfer rate to
-    // be controlled. The pixel transfer rate is dependant on four things:
+    // be controlled. The pixel transfer rate is dependent on four things:
     //    1. The frame rate defined in this Processing sketch in setup()
     //    2. The baud rate of the serial link (~10 bit periods per byte)
     //    3. The number of request bytes 'R' sent in the lines below

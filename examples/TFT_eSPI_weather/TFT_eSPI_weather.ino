@@ -24,7 +24,7 @@
 
 // A processing sketch to create new fonts can be found in the Tools folder of TFT_eSPI
 // https://github.com/Bodmer/TFT_eSPI/tree/master/Tools/Create_Smooth_Font/Create_font
-// New fonts can be generated to include language specifc characters. The Noto family
+// New fonts can be generated to include language specific characters. The Noto family
 // of fonts has an extensive character set coverage.
 
 // Json streaming parser (do not use IDE library manager version) to use is here:
@@ -251,7 +251,7 @@ void updateData() {
 
     tft.unloadFont();
 
-    // Update the temperature here so we dont need keep
+    // Update the temperature here so we don't need keep
     // loading and unloading font which takes time
     tft.loadFont(AA_FONT_LARGE);
     tft.setTextDatum(TR_DATUM);
@@ -723,7 +723,7 @@ String strDate(time_t unixTime)
 //  Created and added new 100x100 and 50x50 pixel weather icons, these are in the
 //  sketch data folder, press Ctrl+K to view
 //  Add moon icons, eliminate all downloads of icons (may lose server!)
-//  Addapted to use anti-aliased fonts, tweaked coords
+//  Adapted to use anti-aliased fonts, tweaked coords
 //  Added forecast for 4th day
 //  Added cloud cover and humidity in lieu of Moon rise/set
 //  Adapted to be compatible with ESP32
