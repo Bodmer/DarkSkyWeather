@@ -128,7 +128,7 @@ void syncTime(void);
 void displayTime(void);
 void printTime(time_t zone, char *tzCode);
 void decodeNTP(void);
-unsigned long sendNTPpacket(IPAddress& address);
+void sendNTPpacket(IPAddress& address);
 
 //====================================================================================
 //                                    Update Time
