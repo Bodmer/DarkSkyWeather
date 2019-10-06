@@ -34,7 +34,7 @@ typedef struct DSW_current {
 } DSW_current;
 
 /***************************************************************************************
-** Description:   Structure for minutely weather, not supported yet
+** Description:   Structure for minutely weather
 ***************************************************************************************/
 typedef struct DSW_minutely {
 
@@ -42,8 +42,8 @@ typedef struct DSW_minutely {
   uint8_t  icon = 0;
   uint32_t time[MAX_MINUTES] = { 0 }; // maybe store as a minute start time + minute
                                       // count uint8_t as 0-59
-  float    precipIntensity[MAX_MINUTES] = { 0 }; // Q: what is the value range for this?
-  uint8_t  precipProbability[MAX_MINUTES] = { 0 };// float 0.0 to 1.0 -> 0-100%
+  float    precipIntensity[MAX_MINUTES] = { 0 };
+  uint8_t  precipProbability[MAX_MINUTES] = { 0 };
 
 } DSW_minutely;
 
@@ -119,7 +119,7 @@ typedef struct TFT_current {
 } TFT_current;
 
 /***************************************************************************************
-** Description:   Structure for minutely weather, not supported yet
+** Description:   Structure for minutely weather
 ***************************************************************************************/
 #define MAX_MINUTES 60 // Can be up to 60 - not used by TFT_eSPI
 typedef struct TFT_minutely {

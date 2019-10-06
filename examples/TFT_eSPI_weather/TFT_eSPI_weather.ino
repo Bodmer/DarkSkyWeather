@@ -474,7 +474,7 @@ void drawAstronomy() {
   tft.setTextDatum(BC_DATUM);
   tft.setTextColor(TFT_ORANGE, TFT_BLACK);
   tft.setTextPadding(0); // Reset padding width to none
-  tft.drawString("Sun", 40, 270);
+  tft.drawString(sunStr, 40, 270);
 
   tft.setTextDatum(BR_DATUM);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);

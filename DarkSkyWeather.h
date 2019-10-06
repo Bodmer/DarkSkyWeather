@@ -27,7 +27,14 @@ class DS_Weather: public JsonListener {
 
   public:
     // Sketch calls this forecast request, it returns true if no parse errors encountered
+    // Provided for backwards compatibility prior to adding minutely data request
     bool getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily  *daily,
+                     String api_key, String latitude, String longitude,
+                     String units, String language);
+
+    // Sketch calls this forecast request, it returns true if no parse errors encountered
+    // This function requests minutely data in addtition to the others
+    bool getForecast(DSW_current *current, DSW_minutely *minutely, DSW_hourly *hourly, DSW_daily  *daily,
                      String api_key, String latitude, String longitude,
                      String units, String language);
 
@@ -44,7 +51,7 @@ class DS_Weather: public JsonListener {
                           // and arrayIndex =0
     void endDocument();   // JSON document has ended, typically ends once
 
-    void startObject();   // Called every time and Object start detected
+    void startObject();   // Called every time an Object start detected
                           // may be called multiple times as object layers entered
                           // Used to increment objectLayer
     void endObject();     // Called every time an object ends
@@ -67,15 +74,17 @@ class DS_Weather: public JsonListener {
 
   private: // Variables used internal to library
 
-    uint16_t hourly_index; // index into the DSW_hourly structure's data arrays
-    uint16_t daily_index;  // index into the DSW_daily structure's data arrays
+    uint16_t minutely_index; // index into the DSW_hourly structure's data arrays
+    uint16_t hourly_index;   // index into the DSW_hourly structure's data arrays
+    uint16_t daily_index;    // index into the DSW_daily structure's data arrays
 
     // The value storage structures are created and deleted by the sketch and
     // a pointer passed via the library getForecast() call the value() function
     // is then used to populate the structs with values
-    DSW_current *current;   // pointer provided by sketch to the DSW_current struct
-    DSW_hourly  *hourly;    // pointer provided by sketch to the DSW_hourly struct
-    DSW_daily   *daily;     // pointer provided by sketch to the DSW_daily struct
+    DSW_current  *current;  // pointer provided by sketch to the DSW_current struct
+	DSW_minutely *minutely; // pointer provided by sketch to the DSW_minutely struct
+    DSW_hourly   *hourly;   // pointer provided by sketch to the DSW_hourly struct
+    DSW_daily    *daily;    // pointer provided by sketch to the DSW_daily struct
 
     String      valuePath;  // object (i.e. sequential key) path (like a "file path")
                             // taken to the name:value pair in the form "hourly/data"

@@ -5,5 +5,6 @@ getForecast	KEYWORD2
 parseRequest	KEYWORD2
 
 DSW_current	KEYWORD2
+DSW_minutely	KEYWORD2
 DSW_hourly	KEYWORD2
 DSW_daily	KEYWORD2

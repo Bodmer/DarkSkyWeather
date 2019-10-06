@@ -1,7 +1,6 @@
 
 // Configuration settings for DarkSkyWeather library
 
-// >>>>>>>>>>>>  NOTE: MINUTELY FORCAST DISABLED AT THE MOMENT IN THIS LIBRARY <<<<<<<<<<<<<<
 
 // These parameters set the data point count stored in program memory (not the datapoint
 // count sent by the Dark Sky server). So they determine the memory used during collection
@@ -19,15 +18,15 @@
 
 // Note: If MINIMISE_DATA_POINTS is defined and the "DarkSkyWeather_Test" example
 // compiled then a compile error "no member named..." will occur in  since data points
-// will be missing!  Unfortnately compile time options for a library cannot be set in
-// when using the Arduino IDE.
+// will be missing!  Unfortnately compile time options for a library cannot be set in a
+// sketch when using the Arduino IDE.
 
 //#define AXTLS       // For ESP8266 only: use older axTLS secure client instead of BearSSL
 //#define SECURE_SSL  // For ESP8266 only: use SHA1 fingerprint with BearSSL
 
 
-//#define SHOW_HEADER // Debug only - for checking response header via serial message
-//#define SHOW_JSON   // Debug only - simple serial output formatting of whole JSON message
+//#define SHOW_HEADER   // Debug only - for checking response header via serial message
+//#define SHOW_JSON     // Debug only - simple serial output formatting of whole JSON message
 //#define SHOW_CALLBACK // Debug only to show the decode tree
 
 // ###############################################################################

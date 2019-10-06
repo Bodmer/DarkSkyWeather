@@ -77,6 +77,7 @@ void printCurrentWeather()
 {
   // Create the structures that hold the retrieved weather
   DSW_current *current = new DSW_current;
+  DSW_minutely *minutely = new DSW_minutely;
   DSW_hourly *hourly = new DSW_hourly;
   DSW_daily  *daily = new DSW_daily;
 
@@ -84,7 +85,7 @@ void printCurrentWeather()
 
   Serial.print("\nRequesting weather information from DarkSky.net... ");
 
-  dsw.getForecast(current, hourly, daily, api_key, latitude, longitude, units, language);
+  dsw.getForecast(current, minutely, hourly, daily, api_key, latitude, longitude, units, language);
 
   Serial.println("Weather from Dark Sky\n");
 
@@ -107,12 +108,23 @@ void printCurrentWeather()
 
   Serial.println();
 
+  Serial.println("############### Minutely weather  ###############\n");
+  Serial.print("Overall minutely summary : "); Serial.println(minutely->overallSummary);
+  for (int i = 0; i<MAX_MINUTES; i++)
+  {
+    Serial.print("Minutely summary  "); if (i<10) Serial.print(" ");
+    Serial.print("Time               : "); Serial.print(strTime(minutely->time[i]));
+    Serial.print("precipIntensity    : "); Serial.println(minutely->precipIntensity[i]);
+    Serial.print("precipProbability  : "); Serial.println(minutely->precipProbability[i]);
+    Serial.println();
+  }
+
   Serial.println("############### Hourly weather  ###############\n");
   Serial.print("Overall hourly summary : "); Serial.println(hourly->overallSummary);
   for (int i = 0; i<MAX_HOURS; i++)
   {
     Serial.print("Hourly summary  "); if (i<10) Serial.print(" ");
-    Serial.print(i); Serial.print(" : "); Serial.println(hourly->summary[i]);
+    Serial.print(i);  Serial.print(" : "); Serial.println(hourly->summary[i]);
     Serial.print("Time               : "); Serial.print(strTime(hourly->time[i]));
     Serial.print("precipIntensity    : "); Serial.println(hourly->precipIntensity[i]);
     Serial.print("precipProbability  : "); Serial.println(hourly->precipProbability[i]);

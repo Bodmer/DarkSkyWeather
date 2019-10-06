@@ -31,18 +31,34 @@
 ***************************************************************************************/
 // The structures etc are created by the sketch and passed to this function.
 // Pass a nullptr for current, hourly or daily pointers to exclude in response.
+// Provided for backwards compatibility prior to adding minutely data request
 bool DS_Weather::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily *daily,
                              String api_key, String latitude, String longitude,
                              String units, String language) {
 
+  return getForecast(current, nullptr, hourly, daily, api_key, latitude, longitude, units, language);
+}
+
+/***************************************************************************************
+** Function name:           getForecast
+** Description:             Setup the weather forecast request from darksky.net
+***************************************************************************************/
+// The structures etc are created by the sketch and passed to this function.
+// Pass a nullptr for current, minutely, hourly or daily pointers to exclude in response.
+bool DS_Weather::getForecast(DSW_current *current, DSW_minutely *minutely, DSW_hourly *hourly, DSW_daily *daily,
+                             String api_key, String latitude, String longitude,
+                             String units, String language) {
+
   data_set = "";
+  minutely_index = 0;
   hourly_index = 0;
   daily_index = 0;
 
   // Local copies of structure pointers, the structures are filled during parsing
-  this->current = current;
-  this->hourly  = hourly;
-  this->daily   = daily;
+  this->current  = current;
+  this->minutely = minutely;
+  this->hourly   = hourly;
+  this->daily    = daily;
 
 #if defined (MINIMISE_DATA_POINTS) // If defined in DarSkyWeather library "User_Setup.h"
    hourly = nullptr;
@@ -50,10 +66,11 @@ bool DS_Weather::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily
 
   // Exclude some info by passing fn a NULL pointer to reduce memory needed
   String exclude = "";
-  if (!current) exclude += "currently,";   // summary, then current weather
-  if (!hourly)  exclude += "hourly,";      // summary, then weather every hour for 48 hours
-  if (!daily)   exclude += "daily,";       // summary, then daily detailed weather for one week (7 days)
-  exclude += "minutely,"; // not supported yet, summary, then rain predictions every minute for next hour
+  if (!current)  exclude += "currently,";   // summary, then current weather
+  if (!minutely) exclude += "minutely,";    // summary, rain predictions every minute for next hour
+  if (!hourly)   exclude += "hourly,";      // summary, then weather every hour for 48 hours
+  if (!daily)    exclude += "daily,";       // summary, then daily detailed weather for one week (7 days)
+
   exclude += "alerts,";   // special warnings, typically none
   exclude += "flags";     // misc info
 
@@ -65,9 +82,10 @@ bool DS_Weather::getForecast(DSW_current *current, DSW_hourly *hourly, DSW_daily
   bool result = parseRequest(url);
 
   // Null out pointers to prevent crashes
-  this->current = nullptr;
-  this->hourly  = nullptr;
-  this->daily   = nullptr;
+  this->current  = nullptr;
+  this->minutely = nullptr;
+  this->hourly   = nullptr;
+  this->daily    = nullptr;
 
   return result;
 }
@@ -477,6 +495,16 @@ void DS_Weather::value(const char *val) {
     return;
   }
 
+    // Minutely data collection
+  if (currentParent == "minutely") {
+    data_set = currentParent; // Save parent object to trigger the hourly array
+    minutely->time[0] = 0;
+    if (currentKey == "summary") minutely->overallSummary = value;
+    //else
+    //if (currentKey == "x") minutely->x = value;
+    return;
+  }
+
   // Hourly data collection
   if (currentParent == "hourly") {
     data_set = currentParent; // Save parent object to trigger the hourly array
@@ -494,6 +522,29 @@ void DS_Weather::value(const char *val) {
     if (currentKey == "summary") daily->overallSummary = value;
     //else
     //if (currentKey == "x") daily->x = value;
+    return;
+  }
+
+    // Collect array data after "data_set" has been set by parent
+
+  // minutely data[N] array
+  if (data_set == "minutely") {
+    if (minutely_index >= MAX_MINUTES) return;
+    if (currentKey == "time") {
+      // Only increment after the first entry
+      if (minutely->time[0] > 0)
+      {
+        minutely_index++;
+        if (minutely_index >= MAX_MINUTES) return;
+      }
+      minutely->time[minutely_index] = (uint32_t)value.toInt();
+    }
+    else
+    if (currentKey == "precipIntensity") minutely->precipIntensity[minutely_index] = value.toFloat();
+    else
+    if (currentKey == "precipProbability") minutely->precipProbability[minutely_index] = (uint8_t)(100 * (value.toFloat()));
+    //else
+    //if (currentKey == "x") minutely->x[minutely_index] = value;
     return;
   }
 
