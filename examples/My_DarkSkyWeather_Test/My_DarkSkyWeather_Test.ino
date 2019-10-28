@@ -166,6 +166,7 @@ void printCurrentWeather()
 
   // Delete to free up space and prevent fragmentation as strings change in length
   delete current;
+  delete minutely;
   delete hourly;
   delete daily;
 }
