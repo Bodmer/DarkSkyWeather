@@ -529,7 +529,7 @@ const char* getMeteoconIcon(uint8_t iconIndex)
 {
   if (iconIndex > MAX_ICON_INDEX) iconIndex = 0; // 0 = unknown
   if (iconIndex == 7) iconIndex = 4; // Change partly-cloudy-night to clear-day
-  if( iconIndex == 4 && current->time > daily->sunsetTime[0] && current->time < daily->sunriseTime[1]) iconIndex = 5;
+  if (iconIndex == 4 && current->time > daily->sunsetTime[0] && current->time < daily->sunriseTime[1]) iconIndex = 5;
   return dsw.iconName(iconIndex);
 }
 
