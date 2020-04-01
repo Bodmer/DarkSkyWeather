@@ -1,6 +1,6 @@
 # News: Dark Sky has joined Apple...
 
-As reported in #28 Apple has purchased Dark Sky and is shutting down the API.
+As reported in Issue #28 Apple has purchased Dark Sky and is shutting down the API.
 The API will continue to function through the end of 2021.
 More Information:
 https://blog.darksky.net/
