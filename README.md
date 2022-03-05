@@ -1,6 +1,6 @@
 # News: Replacement for DarkSkyWeather available
 
-I have created a new library which fetched weather from OpenWeather. The library is here:
+I have created a new library which fetches weather from OpenWeather. The library is here:
 https://github.com/Bodmer/OpenWeather
 
 # News: Dark Sky has joined Apple...
